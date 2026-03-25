@@ -6,6 +6,30 @@ function normalizarAgendaTexto(valor) {
   return (valor || "").trim().toLowerCase();
 }
 
+function formatearMonedaAgenda(valor) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(Number(valor) || 0);
+}
+
+function actualizarMontoServicioSeleccionado() {
+  let selectServicio = document.getElementById("servicioTurno");
+  let etiquetaMonto = document.getElementById("montoServicioTurno");
+  if (!selectServicio || !etiquetaMonto) return;
+
+  let servicio = selectServicio.value;
+  if (!servicio) {
+    etiquetaMonto.innerText = "Monto estimado: ARS 0";
+    return;
+  }
+
+  let monto = obtenerPrecioServicio(servicio);
+  etiquetaMonto.innerText = `Monto estimado: ${formatearMonedaAgenda(monto)}`;
+}
+
 function mostrarAgenda() {
   // 1. Sincronizamos datos globales usando tu coordinador app.js
   if (typeof recargarDatos === "function") {
@@ -16,7 +40,7 @@ function mostrarAgenda() {
   let cuenta = obtenerCuentaActual();
   let listaClientes = obtenerClientes();
   let listaBarberos = obtenerBarberos();
-  let listaServicios = obtenerServicios();
+  let listaServicios = obtenerServiciosConPrecio();
 
   // 3. Aviso de seguridad si faltan datos base
   let alertaFaltanDatos = "";
@@ -38,8 +62,9 @@ function mostrarAgenda() {
     return `<option value="${nombreSeguro}">${nombreSeguro}</option>`;
   }).join("");
   let opcionesServicios = listaServicios.map((s) => {
-    let nombreSeguro = escaparHTML(s);
-    return `<option value="${nombreSeguro}">${nombreSeguro}</option>`;
+    let nombreSeguro = escaparHTML(s.nombre);
+    let precioSeguro = escaparHTML(formatearMonedaAgenda(s.precio));
+    return `<option value="${nombreSeguro}">${nombreSeguro} - ${precioSeguro}</option>`;
   }).join("");
 
   // 5. Construcción de la interfaz sin emojis y usando tus clases de style.css
@@ -75,6 +100,10 @@ function mostrarAgenda() {
             </select>
         </div>
 
+        <div id="montoServicioTurno" style="background: #eff6ff; color: #1e3a8a; border-radius: 6px; padding: 10px; font-size: 14px; margin-bottom: 10px;">
+          Monto estimado: ARS 0
+        </div>
+
         <select id="estadoTurno" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; margin-top: 0;">
             <option value="Pendiente">Estado: Pendiente</option>
             <option value="Confirmado">Estado: Confirmado</option>
@@ -90,6 +119,9 @@ function mostrarAgenda() {
   `;
 
   actualizarListaTurnos();
+
+  let servicioTurno = document.getElementById("servicioTurno");
+  if (servicioTurno) servicioTurno.addEventListener("change", actualizarMontoServicioSeleccionado);
 }
 
 function agregarTurno() {
@@ -99,6 +131,7 @@ function agregarTurno() {
   let barbero = document.getElementById("barberoTurno").value;
   let servicio = document.getElementById("servicioTurno").value;
   let estado = document.getElementById("estadoTurno").value;
+  let montoServicio = obtenerPrecioServicio(servicio);
   
   let errorAgenda = document.getElementById("errorAgenda");
   if (errorAgenda) errorAgenda.style.display = "none";
@@ -153,7 +186,8 @@ function agregarTurno() {
     hora: hora,
     barbero: barbero,
     servicio: servicio,
-    estado: estado
+    estado: estado,
+    montoServicio: montoServicio
   });
 
   // Guardamos a través del storage centralizado
@@ -195,6 +229,8 @@ function actualizarListaTurnos() {
     let horaMostrar = escaparHTML(turno.hora || "Sin hora asignada");
     let barberoMostrar = escaparHTML(turno.barbero || "Barbero Desconocido");
     let servicioMostrar = escaparHTML(turno.servicio || "Servicio Desconocido");
+    let montoTurno = Number.isFinite(Number(turno.montoServicio)) ? Number(turno.montoServicio) : obtenerPrecioServicio(turno.servicio);
+    let montoMostrar = escaparHTML(formatearMonedaAgenda(montoTurno));
 
     li.innerHTML = `
       <div class="turno-info" style="width: 100%;">
@@ -208,6 +244,7 @@ function actualizarListaTurnos() {
           <div class="turno-detalle">Hora: ${horaMostrar}</div>
           <div class="turno-detalle">Barbero: ${barberoMostrar}</div>
           <div class="turno-detalle">Servicio: ${servicioMostrar}</div>
+          <div class="turno-detalle">Monto: ${montoMostrar}</div>
         </div>
       </div>
 

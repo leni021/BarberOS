@@ -276,25 +276,91 @@ function obtenerBarberos() {
 }
 function guardarBarberos(b)  { localStorage.setItem("barberos",  JSON.stringify(b)); }
  
-function obtenerServicios() {
+function normalizarPrecioServicio(precio) {
+  let numero = Number(precio);
+  if (!Number.isFinite(numero) || numero < 0) return 0;
+  return Math.round(numero * 100) / 100;
+}
+
+function obtenerServiciosConPrecio() {
   let base = leerJSONStorage("servicios", ["Corte", "Barba", "Corte + barba"]);
-  if (!Array.isArray(base)) return ["Corte", "Barba", "Corte + barba"];
+  if (!Array.isArray(base)) base = ["Corte", "Barba", "Corte + barba"];
 
   let resultado = [];
   let vistos = new Set();
 
-  base.forEach((nombre) => {
-    let limpio = String(nombre || "").trim();
-    let clave = limpio.toLowerCase();
-    if (limpio && !vistos.has(clave)) {
+  base.forEach((servicio) => {
+    let nombre = "";
+    let precio = 0;
+
+    if (typeof servicio === "string") {
+      nombre = servicio.trim();
+    } else if (servicio && typeof servicio === "object") {
+      nombre = String(servicio.nombre || "").trim();
+      precio = normalizarPrecioServicio(servicio.precio);
+    }
+
+    let clave = nombre.toLowerCase();
+    if (nombre && !vistos.has(clave)) {
       vistos.add(clave);
-      resultado.push(limpio);
+      resultado.push({ nombre, precio });
     }
   });
 
-  return resultado.length > 0 ? resultado : ["Corte", "Barba", "Corte + barba"];
+  if (resultado.length === 0) {
+    return [
+      { nombre: "Corte", precio: 0 },
+      { nombre: "Barba", precio: 0 },
+      { nombre: "Corte + barba", precio: 0 }
+    ];
+  }
+
+  return resultado;
 }
-function guardarServicios(s) { localStorage.setItem("servicios", JSON.stringify(s)); }
+
+function guardarServiciosConPrecio(serviciosConPrecio) {
+  if (!Array.isArray(serviciosConPrecio)) {
+    localStorage.setItem("servicios", JSON.stringify([]));
+    return;
+  }
+
+  let limpios = serviciosConPrecio
+    .map((servicio) => ({
+      nombre: String(servicio && servicio.nombre ? servicio.nombre : "").trim(),
+      precio: normalizarPrecioServicio(servicio && servicio.precio)
+    }))
+    .filter((servicio) => servicio.nombre !== "");
+
+  localStorage.setItem("servicios", JSON.stringify(limpios));
+}
+
+function obtenerServicios() {
+  return obtenerServiciosConPrecio().map((servicio) => servicio.nombre);
+}
+
+function guardarServicios(s) {
+  if (!Array.isArray(s)) {
+    localStorage.setItem("servicios", JSON.stringify([]));
+    return;
+  }
+
+  // Compatibilidad: acepta array de strings o de objetos {nombre, precio}
+  if (s.length > 0 && typeof s[0] === "object") {
+    guardarServiciosConPrecio(s);
+    return;
+  }
+
+  let conPrecio = s.map((nombre) => ({ nombre: String(nombre || "").trim(), precio: 0 }));
+  guardarServiciosConPrecio(conPrecio);
+}
+
+function obtenerPrecioServicio(nombreServicio) {
+  let nombreBuscado = String(nombreServicio || "").trim().toLowerCase();
+  if (!nombreBuscado) return 0;
+
+  let servicio = obtenerServiciosConPrecio().find((item) => item.nombre.toLowerCase() === nombreBuscado);
+  return servicio ? normalizarPrecioServicio(servicio.precio) : 0;
+}
  
 function obtenerClientes() {
   let base = leerJSONStorage("clientes", []);
@@ -541,7 +607,7 @@ async function inyectarCredencialesPrueba() {
 }
  
 function restablecerInstalacionLimpia() {
-  let confirmar = confirm("⚠️ ATENCIÓN: Esto borrará TODA la aplicación. ¿Estás seguro?");
+  let confirmar = confirm("Atención: Esto borrará toda la aplicación. ¿Estás seguro?");
   if (confirmar) {
     [
       "barbeos_admin", "barbeos_business", "barbeos_license",
