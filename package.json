@@ -1,6 +1,6 @@
 {
   "name": "barber-software",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "BarberOS - Gestion de barberia",
   "main": "main.js",
   "scripts": {
