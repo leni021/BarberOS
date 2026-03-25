@@ -1,6 +1,6 @@
 {
   "name": "barber-software",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "BarberOS - Gestion de barberia",
   "main": "main.js",
   "scripts": {
@@ -23,6 +23,7 @@
   "build": {
     "appId": "com.leni021.barberos",
     "productName": "BarberOS",
+    "artifactName": "${productName}.Setup.${version}.${ext}",
     "directories": {
       "output": "release"
     },
