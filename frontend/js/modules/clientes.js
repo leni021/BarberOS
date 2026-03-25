@@ -15,11 +15,32 @@ function formatearFechaCliente(fecha) {
   return fecha;
 }
 
+function mostrarMensajeClientes(mensaje, tipo = "error") {
+  let contenedor = document.getElementById("mensajeClientes");
+  if (!contenedor) return;
+
+  let esError = tipo === "error";
+  contenedor.style.display = "block";
+  contenedor.style.backgroundColor = esError ? "#fee2e2" : "#dcfce7";
+  contenedor.style.color = esError ? "#b91c1c" : "#166534";
+  contenedor.style.border = `1px solid ${esError ? "#fecaca" : "#86efac"}`;
+  contenedor.innerText = mensaje;
+}
+
+function limpiarMensajeClientes() {
+  let contenedor = document.getElementById("mensajeClientes");
+  if (!contenedor) return;
+  contenedor.style.display = "none";
+  contenedor.innerText = "";
+}
+
 function mostrarClientes() {
   recargarDatos();
 
   document.getElementById("contenido").innerHTML = `
     <h1>Clientes</h1>
+
+    <div id="mensajeClientes" style="display:none; margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px;"></div>
 
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; max-width: 500px;">
       <h3 style="margin-top: 0; color: #111827;">Nuevo Cliente</h3>
@@ -36,6 +57,8 @@ function mostrarClientes() {
     <h2>Lista de Clientes</h2>
     <ul id="listaClientes"></ul>
   `;
+
+  limpiarMensajeClientes();
 
   actualizarListaClientes();
 }
@@ -55,6 +78,7 @@ function agregarCliente() {
       errorCliente.innerText = "Por favor, ingresa al menos el nombre del cliente.";
       errorCliente.style.display = "block";
     }
+    mostrarMensajeClientes("Completa el nombre del cliente para guardar.", "error");
     return;
   }
 
@@ -66,6 +90,7 @@ function agregarCliente() {
       errorCliente.innerText = "Ese cliente ya existe en la lista.";
       errorCliente.style.display = "block";
     }
+    mostrarMensajeClientes("Ese cliente ya existe en la lista.", "error");
     return;
   }
 
@@ -80,27 +105,34 @@ function agregarCliente() {
 
   guardarClientes(clientes);
   mostrarClientes();
+  mostrarMensajeClientes("Cliente guardado correctamente.", "ok");
 }
 
 function eliminarCliente(indice) {
-  let clienteAEliminar = clientes[indice];
-  if (!clienteAEliminar) return;
+  try {
+    let clienteAEliminar = clientes[indice];
+    if (!clienteAEliminar) return;
 
-  let nombreCliente = normalizarNombreCliente(clienteAEliminar.nombre);
-  let turnos = obtenerTurnos();
-  let clienteEnUso = turnos.some((turno) => {
-    let nombreTurno = turno.cliente || turno.nombre || "";
-    return normalizarNombreCliente(nombreTurno) === nombreCliente;
-  });
+    let nombreCliente = normalizarNombreCliente(clienteAEliminar.nombre);
+    let turnos = obtenerTurnos();
+    let clienteEnUso = turnos.some((turno) => {
+      let nombreTurno = turno.cliente || turno.nombre || "";
+      return normalizarNombreCliente(nombreTurno) === nombreCliente;
+    });
 
-  if (clienteEnUso) {
-    alert("No puedes eliminar este cliente porque tiene turnos cargados.");
-    return;
+    if (clienteEnUso) {
+      mostrarMensajeClientes("No puedes eliminar este cliente porque tiene turnos cargados.", "error");
+      return;
+    }
+
+    clientes.splice(indice, 1);
+    guardarClientes(clientes);
+    mostrarMensajeClientes("Cliente eliminado correctamente.", "ok");
+    actualizarListaClientes();
+  } catch (error) {
+    console.error("Error al eliminar cliente:", error);
+    mostrarMensajeClientes("Ocurrio un error al eliminar el cliente. Intenta nuevamente.", "error");
   }
-
-  clientes.splice(indice, 1);
-  guardarClientes(clientes);
-  actualizarListaClientes();
 }
 
 function actualizarListaClientes() {
