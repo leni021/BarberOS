@@ -1,8 +1,26 @@
 const { app, BrowserWindow, dialog } = require('electron')
 const { autoUpdater } = require('electron-updater')
+const fs = require('fs')
+const path = require('path')
 
 let mainWindow = null
 let ultimoBloqueProgreso = -1
+let rutaLogUpdater = ''
+
+function escribirLogUpdater(mensaje) {
+  try {
+    let marcaTiempo = new Date().toISOString()
+    let linea = `[${marcaTiempo}] ${mensaje}\n`
+
+    console.log(linea.trim())
+
+    if (rutaLogUpdater) {
+      fs.appendFileSync(rutaLogUpdater, linea, 'utf8')
+    }
+  } catch (error) {
+    console.error('No se pudo escribir en update.log:', error)
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -23,11 +41,13 @@ function configurarAutoUpdate() {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('checking-for-update', () => {
-    console.log('Auto-update: buscando actualizaciones...')
+    escribirLogUpdater('Auto-update: buscando actualizaciones...')
   })
 
-  autoUpdater.on('update-available', () => {
+  autoUpdater.on('update-available', (info) => {
     ultimoBloqueProgreso = -1
+    escribirLogUpdater(`Auto-update: actualizacion disponible -> version ${info && info.version ? info.version : 'desconocida'}`)
+
     if (mainWindow) {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
@@ -38,7 +58,7 @@ function configurarAutoUpdate() {
   })
 
   autoUpdater.on('update-not-available', () => {
-    console.log('Auto-update: no hay actualizaciones disponibles.')
+    escribirLogUpdater('Auto-update: no hay actualizaciones disponibles.')
   })
 
   autoUpdater.on('download-progress', (progreso) => {
@@ -50,14 +70,17 @@ function configurarAutoUpdate() {
     let bloque = Math.floor(porcentaje / 10)
     if (bloque > ultimoBloqueProgreso) {
       ultimoBloqueProgreso = bloque
-      console.log(`Auto-update: descarga ${porcentaje.toFixed(1)}%`) 
+      escribirLogUpdater(`Auto-update: descarga ${porcentaje.toFixed(1)}%`) 
     }
   })
 
-  autoUpdater.on('update-downloaded', async () => {
+  autoUpdater.on('update-downloaded', async (info) => {
+    escribirLogUpdater(`Auto-update: descarga finalizada -> version ${info && info.version ? info.version : 'desconocida'}`)
+
     if (mainWindow) mainWindow.setProgressBar(-1)
 
     if (!mainWindow) {
+      escribirLogUpdater('Auto-update: instalacion automatica al cerrar app (sin ventana activa).')
       autoUpdater.quitAndInstall()
       return
     }
@@ -73,12 +96,15 @@ function configurarAutoUpdate() {
     })
 
     if (respuesta.response === 0) {
+      escribirLogUpdater('Auto-update: usuario acepto reiniciar para instalar.')
       autoUpdater.quitAndInstall()
+    } else {
+      escribirLogUpdater('Auto-update: usuario pospuso la instalacion.')
     }
   })
 
   autoUpdater.on('error', (error) => {
-    console.error('Error de auto-update:', error)
+    escribirLogUpdater(`Auto-update error: ${error && error.message ? error.message : String(error)}`)
 
     if (mainWindow) {
       mainWindow.setProgressBar(-1)
@@ -93,6 +119,10 @@ function configurarAutoUpdate() {
 }
 
 app.whenReady().then(() => {
+  let userDataPath = app.getPath('userData')
+  rutaLogUpdater = path.join(userDataPath, 'update.log')
+  escribirLogUpdater(`Logger de auto-update inicializado en: ${rutaLogUpdater}`)
+
   createWindow()
   configurarAutoUpdate()
   autoUpdater.checkForUpdatesAndNotify()
