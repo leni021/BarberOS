@@ -1,16 +1,52 @@
 {
   "name": "barber-software",
   "version": "1.0.0",
-  "description": "",
+  "description": "BarberOS - Gestion de barberia",
   "main": "main.js",
   "scripts": {
-  "start": "electron ."
-},
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "release": "electron-builder --publish always"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
   "devDependencies": {
-    "electron": "^41.0.0"
+    "electron": "^41.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.leni021.barberos",
+    "productName": "BarberOS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "frontend/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "leni021",
+        "repo": "BarberOS"
+      }
+    ]
   }
 }
