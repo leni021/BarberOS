@@ -24,7 +24,7 @@
     "appId": "com.leni021.barberos",
     "productName": "BarberOS",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
       "main.js",
@@ -32,6 +32,8 @@
       "package.json"
     ],
     "win": {
+      "signAndEditExecutable": false,
+      "forceCodeSigning": false,
       "target": [
         {
           "target": "nsis",
