@@ -7,6 +7,24 @@ let mainWindow = null
 let ultimoBloqueProgreso = -1
 let rutaLogUpdater = ''
 
+function rotarLogSiExcedeLimite(rutaArchivo, limiteBytes = 2 * 1024 * 1024) {
+  try {
+    if (!rutaArchivo || !fs.existsSync(rutaArchivo)) return
+
+    let stats = fs.statSync(rutaArchivo)
+    if (stats.size <= limiteBytes) return
+
+    let rutaRotada = `${rutaArchivo}.1`
+    if (fs.existsSync(rutaRotada)) {
+      fs.unlinkSync(rutaRotada)
+    }
+
+    fs.renameSync(rutaArchivo, rutaRotada)
+  } catch (error) {
+    console.error('No se pudo rotar el log local:', error)
+  }
+}
+
 function escribirLogUpdater(mensaje) {
   try {
     let marcaTiempo = new Date().toISOString()
@@ -15,11 +33,35 @@ function escribirLogUpdater(mensaje) {
     console.log(linea.trim())
 
     if (rutaLogUpdater) {
+      rotarLogSiExcedeLimite(rutaLogUpdater)
       fs.appendFileSync(rutaLogUpdater, linea, 'utf8')
     }
   } catch (error) {
     console.error('No se pudo escribir en update.log:', error)
   }
+}
+
+function configurarDiagnosticoRenderer(ventana) {
+  if (!ventana || !ventana.webContents) return
+
+  ventana.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    let esErrorConsola = level >= 2
+    let esMensajeMonitoreado = typeof message === 'string' && message.includes('[BARBEROS][FRONTEND]')
+
+    if (!esErrorConsola && !esMensajeMonitoreado) return
+
+    let origen = sourceId || 'renderer'
+    let linea = Number.isFinite(Number(line)) ? Number(line) : 0
+    escribirLogUpdater(`Frontend console level=${level} ${origen}:${linea} -> ${String(message)}`)
+  })
+
+  ventana.webContents.on('render-process-gone', (_event, details) => {
+    escribirLogUpdater(`Renderer caido: reason=${details && details.reason ? details.reason : 'desconocida'}, exitCode=${details && Number.isFinite(details.exitCode) ? details.exitCode : 'N/A'}`)
+  })
+
+  ventana.webContents.on('unresponsive', () => {
+    escribirLogUpdater('Renderer no responde (unresponsive).')
+  })
 }
 
 function createWindow() {
@@ -33,6 +75,7 @@ function createWindow() {
     }
   })
 
+  configurarDiagnosticoRenderer(mainWindow)
   mainWindow.loadFile('frontend/pages/login.html')
 }
 
@@ -121,7 +164,7 @@ function configurarAutoUpdate() {
 app.whenReady().then(() => {
   let userDataPath = app.getPath('userData')
   rutaLogUpdater = path.join(userDataPath, 'update.log')
-  escribirLogUpdater(`Logger de auto-update inicializado en: ${rutaLogUpdater}`)
+  escribirLogUpdater(`Logger local inicializado en: ${rutaLogUpdater}`)
 
   createWindow()
   configurarAutoUpdate()
