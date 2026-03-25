@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>BarberOS - Registro</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; background: #111827; height: 100vh; margin: 0;">
+
+    <div style="background: white; padding: 40px; border-radius: 8px; width: 350px; text-align: center;">
+        <h2 style="margin-top: 0; color: #111827;">Crear Cuenta</h2>
+        <p style="color: #475569; margin-bottom: 20px;">Registra tu barbería en BarberOS</p>
+        
+        <input type="text" id="regNegocio" placeholder="Nombre de la Barbería" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+        <input type="text" id="regDueno" placeholder="Nombre del Dueño" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+        <input type="email" id="regEmail" placeholder="Correo electrónico" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+        <input type="password" id="regPassword" placeholder="Contraseña" style="width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+        
+        <button id="btnRegistrar" style="width: 100%; margin-top: 0;">Registrarse</button>
+        
+        <p style="margin-top: 20px; font-size: 14px; color: #475569;">
+            ¿Ya tienes cuenta? <a href="login.html" style="color: #2563eb; text-decoration: none;">Inicia sesión aquí</a>
+        </p>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

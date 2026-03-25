@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>BarberOS</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <div class="sidebar">
+    <h2>BarberOS</h2>
+
+    <div class="menu-item" id="btnAgenda">Agenda</div>
+    <div class="menu-item" id="btnClientes">Clientes</div>
+    <div class="menu-item" id="btnBarberos">Barberos</div>
+    <div class="menu-item" id="btnServicios">Servicios</div>
+    <div class="menu-item" id="btnConfiguracion">Configuración</div>
+    <div class="menu-item" id="btnCerrarSesion" style="color: #ef4444; margin-top: 50px;">Cerrar Sesión</div>
+  </div>
+
+  <div class="main" id="contenido"></div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/modules/auth-guard.js"></script>
+  <script src="../js/modules/configuracion.js"></script>
+  <script src="../js/modules/barberos.js"></script>
+  <script src="../js/modules/servicios.js"></script>
+  <script src="../js/modules/clientes.js"></script>
+  <script src="../js/modules/agenda.js"></script>
+  <script src="../js/app.js"></script>
+
+</body>
+
+</html>
