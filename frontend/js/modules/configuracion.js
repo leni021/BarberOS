@@ -17,7 +17,7 @@ function mostrarConfiguracion() {
     </div>
 
     <div style="background: linear-gradient(to right, #111827, #1f2937); color: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; max-width: 500px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-      <h3 style="margin-top: 0; color: #f59e0b;">Próximamente: BarberOS PRO</h3>
+      <h3 style="margin-top: 0; color: #f59e0b;">Próximamente: BarberOS PRO (Prueba 1.0.1)</h3>
       <p style="font-size: 14px; margin-bottom: 0; color: #cbd5e1;">
         Estamos trabajando en la automatización de turnos por <strong>WhatsApp</strong> y recordatorios a clientes. 
         <br><br>¡Pronto podrás mejorar tu plan desde aquí y llevar tu barbería al siguiente nivel!
