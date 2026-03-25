@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron')
+const { app, BrowserWindow, dialog, shell } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const fs = require('fs')
 const path = require('path')
@@ -6,6 +6,7 @@ const path = require('path')
 let mainWindow = null
 let ultimoBloqueProgreso = -1
 let rutaLogUpdater = ''
+const URL_RELEASES = 'https://github.com/leni021/BarberOS/releases/latest'
 
 function rotarLogSiExcedeLimite(rutaArchivo, limiteBytes = 2 * 1024 * 1024) {
   try {
@@ -62,6 +63,41 @@ function configurarDiagnosticoRenderer(ventana) {
   ventana.webContents.on('unresponsive', () => {
     escribirLogUpdater('Renderer no responde (unresponsive).')
   })
+}
+
+async function mostrarFallbackInstalacionManual(motivo) {
+  let detalleMotivo = motivo ? `\n\nDetalle tecnico: ${motivo}` : ''
+
+  escribirLogUpdater(`Auto-update: se activa fallback manual. Motivo: ${motivo || 'sin detalle'}`)
+
+  if (!mainWindow) {
+    shell.openExternal(URL_RELEASES)
+    return
+  }
+
+  const respuesta = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    title: 'Instalacion manual requerida',
+    message: 'No se pudo completar la instalacion automatica en este intento.',
+    detail: `La app puede recuperarse con una instalacion manual guiada:\n1) Abrir descargas oficiales\n2) Descargar el instalador mas reciente\n3) Ejecutarlo sobre la version actual (sin desinstalar)\n\nEsto solo se usa cuando el auto-update falla.${detalleMotivo}`,
+    buttons: ['Abrir descargas', 'Cancelar'],
+    defaultId: 0,
+    cancelId: 1
+  })
+
+  if (respuesta.response === 0) {
+    shell.openExternal(URL_RELEASES)
+  }
+}
+
+async function intentarInstalarActualizacion() {
+  try {
+    autoUpdater.quitAndInstall()
+  } catch (error) {
+    let detalle = error && error.message ? error.message : String(error)
+    escribirLogUpdater(`Auto-update: fallo quitAndInstall -> ${detalle}`)
+    await mostrarFallbackInstalacionManual(detalle)
+  }
 }
 
 function createWindow() {
@@ -124,7 +160,7 @@ function configurarAutoUpdate() {
 
     if (!mainWindow) {
       escribirLogUpdater('Auto-update: instalacion automatica al cerrar app (sin ventana activa).')
-      autoUpdater.quitAndInstall()
+      await intentarInstalarActualizacion()
       return
     }
 
@@ -140,7 +176,7 @@ function configurarAutoUpdate() {
 
     if (respuesta.response === 0) {
       escribirLogUpdater('Auto-update: usuario acepto reiniciar para instalar.')
-      autoUpdater.quitAndInstall()
+      await intentarInstalarActualizacion()
     } else {
       escribirLogUpdater('Auto-update: usuario pospuso la instalacion.')
     }
