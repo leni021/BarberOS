@@ -38,6 +38,14 @@ button{
   margin-bottom:30px;
 }
 
+.app-version-sidebar{
+  margin-top:10px;
+  margin-bottom:8px;
+  font-size:12px;
+  color:#93c5fd;
+  opacity:.9;
+}
+
 .btn-tema{
   width:58px;
   height:30px;
@@ -345,6 +353,12 @@ body.modo-oscuro :not(button)[style*="color:#64748b"]{
 .auth-subtitle{
   color:#475569;
   margin:10px 0 18px;
+}
+
+.auth-version{
+  margin:-4px 0 14px;
+  font-size:12px;
+  color:#64748b;
 }
 
 .auth-input{

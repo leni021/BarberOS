@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
     <title>BarberOS - Registro</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
@@ -10,6 +11,7 @@
     <div class="auth-card">
         <h2 class="auth-title">Crear Cuenta</h2>
         <p class="auth-subtitle">Registra tu barbería en BarberOS</p>
+        <p id="appVersionLabel" class="auth-version">Version instalada: cargando...</p>
 
         <form id="formRegistro">
             <input type="text" id="regNegocio" placeholder="Nombre de la Barbería" class="auth-input auth-input-block" autocomplete="organization">

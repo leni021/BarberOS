@@ -2,11 +2,33 @@ const { app, BrowserWindow, dialog, shell } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const fs = require('fs')
 const path = require('path')
+const { URL } = require('url')
 
 let mainWindow = null
 let ultimoBloqueProgreso = -1
 let rutaLogUpdater = ''
+let ultimoChequeoRotacionLog = 0
 const URL_RELEASES = 'https://github.com/leni021/BarberOS/releases/latest'
+
+function esUrlExternaPermitida(urlTexto) {
+  try {
+    const url = new URL(urlTexto)
+    const protocoloSeguro = url.protocol === 'https:'
+    const hostPermitido = ['github.com', 'wa.me'].includes(url.hostname)
+    return protocoloSeguro && hostPermitido
+  } catch (_error) {
+    return false
+  }
+}
+
+function abrirExternoSeguro(urlTexto) {
+  if (!esUrlExternaPermitida(urlTexto)) {
+    escribirLogUpdater(`Bloqueada apertura externa no permitida: ${String(urlTexto)}`)
+    return
+  }
+
+  shell.openExternal(urlTexto)
+}
 
 function rotarLogSiExcedeLimite(rutaArchivo, limiteBytes = 2 * 1024 * 1024) {
   try {
@@ -34,8 +56,17 @@ function escribirLogUpdater(mensaje) {
     console.log(linea.trim())
 
     if (rutaLogUpdater) {
-      rotarLogSiExcedeLimite(rutaLogUpdater)
-      fs.appendFileSync(rutaLogUpdater, linea, 'utf8')
+      let ahora = Date.now()
+      if (ahora - ultimoChequeoRotacionLog > 30000) {
+        ultimoChequeoRotacionLog = ahora
+        rotarLogSiExcedeLimite(rutaLogUpdater)
+      }
+
+      fs.appendFile(rutaLogUpdater, linea, 'utf8', (error) => {
+        if (error) {
+          console.error('No se pudo escribir en update.log:', error)
+        }
+      })
     }
   } catch (error) {
     console.error('No se pudo escribir en update.log:', error)
@@ -71,7 +102,7 @@ async function mostrarFallbackInstalacionManual(motivo) {
   escribirLogUpdater(`Auto-update: se activa fallback manual. Motivo: ${motivo || 'sin detalle'}`)
 
   if (!mainWindow) {
-    shell.openExternal(URL_RELEASES)
+    abrirExternoSeguro(URL_RELEASES)
     return
   }
 
@@ -86,7 +117,7 @@ async function mostrarFallbackInstalacionManual(motivo) {
   })
 
   if (respuesta.response === 0) {
-    shell.openExternal(URL_RELEASES)
+    abrirExternoSeguro(URL_RELEASES)
   }
 }
 
@@ -101,6 +132,8 @@ async function intentarInstalarActualizacion() {
 }
 
 function createWindow() {
+  const versionActual = app.getVersion()
+
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -112,7 +145,23 @@ function createWindow() {
   })
 
   configurarDiagnosticoRenderer(mainWindow)
-  mainWindow.loadFile('frontend/pages/login.html')
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    abrirExternoSeguro(url)
+    return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url || url.startsWith('file://')) return
+    event.preventDefault()
+    abrirExternoSeguro(url)
+  })
+
+  mainWindow.loadFile('frontend/pages/login.html', {
+    query: {
+      v: versionActual
+    }
+  })
 }
 
 function configurarAutoUpdate() {
@@ -197,6 +246,13 @@ function configurarAutoUpdate() {
   })
 }
 
+function programarChequeoActualizaciones() {
+  // Evita competir con el primer render del login y mejora el arranque percibido.
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify()
+  }, 6000)
+}
+
 app.whenReady().then(() => {
   let userDataPath = app.getPath('userData')
   rutaLogUpdater = path.join(userDataPath, 'update.log')
@@ -204,7 +260,7 @@ app.whenReady().then(() => {
 
   createWindow()
   configurarAutoUpdate()
-  autoUpdater.checkForUpdatesAndNotify()
+  programarChequeoActualizaciones()
 })
 
 app.on('window-all-closed', () => {

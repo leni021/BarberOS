@@ -11,6 +11,34 @@ function escaparHTML(valor) {
     .replace(/'/g, "&#39;");
 }
 
+const CLAVE_VERSION_APP = "barbeos_app_version";
+
+function obtenerVersionAppActual() {
+  let query = new URLSearchParams(window.location.search || "");
+  let versionDesdeUrl = (query.get("v") || "").trim();
+
+  if (versionDesdeUrl) {
+    localStorage.setItem(CLAVE_VERSION_APP, versionDesdeUrl);
+    return versionDesdeUrl;
+  }
+
+  return (localStorage.getItem(CLAVE_VERSION_APP) || "").trim();
+}
+
+function construirRutaConVersion(rutaBase) {
+  let version = obtenerVersionAppActual();
+  if (!version) return rutaBase;
+  return `${rutaBase}?v=${encodeURIComponent(version)}`;
+}
+
+function mostrarVersionEnSidebar() {
+  let etiqueta = document.getElementById("appVersionSidebar");
+  if (!etiqueta) return;
+
+  let version = obtenerVersionAppActual();
+  etiqueta.textContent = version ? `Version ${escaparHTML(version)}` : "Version desconocida";
+}
+
 
 
 // ========================================
@@ -19,7 +47,7 @@ function escaparHTML(valor) {
 if (typeof verificarSesionActiva === "function") {
   verificarSesionActiva();
 } else if (localStorage.getItem("sesionActiva") !== "true") {
-  window.location.href = "login.html";
+  window.location.href = construirRutaConVersion("login.html");
 }
 
 
@@ -51,7 +79,7 @@ function recargarDatos() {
 function cerrarSesion() {
   localStorage.removeItem("sesionActiva");
   localStorage.removeItem("sesionRecordada");
-  window.location.href = "login.html";
+  window.location.href = construirRutaConVersion("login.html");
 }
 
 function obtenerModoOscuroActivo() {
@@ -139,4 +167,5 @@ function conectarMenuLateral() {
 // ========================================
 aplicarModoOscuro(obtenerModoOscuroActivo());
 conectarMenuLateral();
+mostrarVersionEnSidebar();
 mostrarAgenda();

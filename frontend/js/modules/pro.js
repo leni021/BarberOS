@@ -34,7 +34,7 @@ function mostrarPro() {
       <p style="margin-bottom: 10px; color: #cffafe;">
         BarberOS PRO incluirá estadísticas más completas para mejorar decisiones del negocio y automatización por WhatsApp para ahorrar tiempo operativo. El modelo de pago se habilitará en una actualización futura y actualmente estamos trabajando en su lanzamiento.
       </p>
-      <button onclick="abrirWhatsAppPro()" style="background: linear-gradient(135deg, #22d3ee, #2563eb); color: #f8fafc; font-weight: 700; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 6px 16px rgba(37,99,235,0.35);">
+      <button id="btnActivarPro" style="background: linear-gradient(135deg, #22d3ee, #2563eb); color: #f8fafc; font-weight: 700; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 6px 16px rgba(37,99,235,0.35);">
         Quiero activar BarberOS PRO
       </button>
       <div style="margin-top: 10px; font-size: 13px; color: #e5e7eb; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(148, 163, 184, 0.35); padding: 8px 10px; border-radius: 8px; display: inline-block;">
@@ -66,4 +66,9 @@ function mostrarPro() {
       </div>
     </div>
   `;
+
+  let btnActivarPro = document.getElementById("btnActivarPro");
+  if (btnActivarPro) {
+    btnActivarPro.addEventListener("click", abrirWhatsAppPro);
+  }
 }

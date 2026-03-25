@@ -1,16 +1,17 @@
 {
   "name": "barber-software",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "BarberOS - Gestion de barberia",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
+    "dist:signed": "electron-builder -c.win.forceCodeSigning=true -c.win.signAndEditExecutable=true",
     "release": "electron-builder --publish always"
   },
   "keywords": [],
-  "author": "",
+  "author": "Lenning Hidalgo",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -43,6 +44,13 @@
           ]
         }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "BarberOS"
     },
     "publish": [
       {

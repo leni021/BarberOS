@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
     <title>BarberOS - Iniciar Sesión</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
@@ -10,6 +11,7 @@
     <div class="auth-card">
         <h2 class="auth-title">BarberOS</h2>
         <p class="auth-subtitle">Inicia sesión en tu barbería</p>
+        <p id="appVersionLabel" class="auth-version">Version instalada: cargando...</p>
         
         <form id="formLogin">
             <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" class="auth-input auth-input-email">
