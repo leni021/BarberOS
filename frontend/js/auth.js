@@ -4,11 +4,39 @@
 // ========================================
  
 document.addEventListener("DOMContentLoaded", () => {
+  const formLogin   = document.getElementById("formLogin");
+  const formRegistro = document.getElementById("formRegistro");
   const btnEntrar    = document.getElementById("btnEntrar");
   const btnRegistrar = document.getElementById("btnRegistrar");
+
+  if (window.location.pathname.endsWith("/login.html") || window.location.pathname.endsWith("\\login.html") || window.location.pathname.includes("login.html")) {
+    if (localStorage.getItem("sesionActiva") === "true" && localStorage.getItem("sesionRecordada") === "true") {
+      window.location.href = "index.html";
+      return;
+    }
+
+    if (localStorage.getItem("sesionActiva") === "true" && localStorage.getItem("sesionRecordada") !== "true") {
+      localStorage.removeItem("sesionActiva");
+    }
+  }
  
-  if (btnEntrar)    btnEntrar.addEventListener("click",    iniciarSesion);
-  if (btnRegistrar) btnRegistrar.addEventListener("click", registrarBarberia);
+  if (formLogin) {
+    formLogin.addEventListener("submit", (event) => {
+      event.preventDefault();
+      iniciarSesion();
+    });
+  }
+
+  if (btnEntrar && !formLogin) btnEntrar.addEventListener("click", iniciarSesion);
+
+  if (formRegistro) {
+    formRegistro.addEventListener("submit", (event) => {
+      event.preventDefault();
+      registrarBarberia();
+    });
+  }
+
+  if (btnRegistrar && !formRegistro) btnRegistrar.addEventListener("click", registrarBarberia);
 });
  
 // ========================================
@@ -35,6 +63,8 @@ async function hashearPassword(password, salt) {
 async function iniciarSesion() {
   let emailInput    = document.getElementById("loginEmail").value.trim();
   let passwordInput = document.getElementById("loginPassword").value.trim();
+  let recordarSesion = document.getElementById("recordarSesion");
+  let mantenerSesion = recordarSesion ? recordarSesion.checked : false;
   let mensajeError  = document.getElementById("mensajeError");
   let btnEntrar     = document.getElementById("btnEntrar");
  
@@ -56,6 +86,7 @@ async function iniciarSesion() {
       if (emailInput === admin.email && passwordInput === admin.password) {
         await migrarPasswordAHash(admin, passwordInput);
         localStorage.setItem("sesionActiva", "true");
+        localStorage.setItem("sesionRecordada", mantenerSesion ? "true" : "false");
         window.location.href = "index.html";
         return;
       } else {
@@ -75,6 +106,7 @@ async function iniciarSesion() {
  
     if (hashIngresado === admin.passwordHash) {
       localStorage.setItem("sesionActiva", "true");
+      localStorage.setItem("sesionRecordada", mantenerSesion ? "true" : "false");
       window.location.href = "index.html";
     } else {
       mostrarError(mensajeError, "Correo o contraseña incorrectos.");
@@ -91,6 +123,7 @@ async function iniciarSesion() {
     if (emailInput === cuentaLegacy.email && passwordInput === cuentaLegacy.password) {
       await migrarPasswordAHash(cuentaLegacy, passwordInput);
       localStorage.setItem("sesionActiva", "true");
+      localStorage.setItem("sesionRecordada", mantenerSesion ? "true" : "false");
       window.location.href = "index.html";
     } else {
       mostrarError(mensajeError, "Correo o contraseña incorrectos.");

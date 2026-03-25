@@ -33,6 +33,8 @@ let barberos = obtenerBarberos();
 let servicios = obtenerServicios();
 let clientes = obtenerClientes();
 
+const CLAVE_MODO_UI = "barbeos_ui_modo";
+
 
 
 // ========================================
@@ -48,7 +50,39 @@ function recargarDatos() {
 
 function cerrarSesion() {
   localStorage.removeItem("sesionActiva");
+  localStorage.removeItem("sesionRecordada");
   window.location.href = "login.html";
+}
+
+function obtenerModoOscuroActivo() {
+  return localStorage.getItem(CLAVE_MODO_UI) === "oscuro";
+}
+
+function actualizarTextoBotonModoOscuro() {
+  let btn = document.getElementById("btnModoOscuro");
+  if (!btn) return;
+  let modoOscuroActivo = obtenerModoOscuroActivo();
+
+  btn.classList.toggle("activo", modoOscuroActivo);
+
+  btn.title = modoOscuroActivo ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+  btn.setAttribute("aria-label", btn.title);
+}
+
+function aplicarModoOscuro(activar) {
+  if (activar) {
+    document.body.classList.add("modo-oscuro");
+    localStorage.setItem(CLAVE_MODO_UI, "oscuro");
+  } else {
+    document.body.classList.remove("modo-oscuro");
+    localStorage.setItem(CLAVE_MODO_UI, "claro");
+  }
+
+  actualizarTextoBotonModoOscuro();
+}
+
+function alternarModoOscuro() {
+  aplicarModoOscuro(!obtenerModoOscuroActivo());
 }
 
 
@@ -61,8 +95,10 @@ function conectarMenuLateral() {
   const btnClientes = document.getElementById("btnClientes");
   const btnBarberos = document.getElementById("btnBarberos");
   const btnServicios = document.getElementById("btnServicios");
+  const btnPro = document.getElementById("btnPro");
   const btnConfiguracion = document.getElementById("btnConfiguracion");
   const btnCerrarSesion = document.getElementById("btnCerrarSesion");
+  const btnModoOscuro = document.getElementById("btnModoOscuro");
 
   if (btnAgenda) {
     btnAgenda.addEventListener("click", mostrarAgenda);
@@ -80,6 +116,10 @@ function conectarMenuLateral() {
     btnServicios.addEventListener("click", mostrarServicios);
   }
 
+  if (btnPro && typeof mostrarPro === "function") {
+    btnPro.addEventListener("click", mostrarPro);
+  }
+
   if (btnConfiguracion) {
     btnConfiguracion.addEventListener("click", mostrarConfiguracion);
   }
@@ -87,11 +127,16 @@ function conectarMenuLateral() {
   if (btnCerrarSesion) {
     btnCerrarSesion.addEventListener("click", cerrarSesion);
   }
+
+  if (btnModoOscuro) {
+    btnModoOscuro.addEventListener("click", alternarModoOscuro);
+  }
 }
 
 
 // ========================================
 // 5. INICIALIZACIÓN DE LA APP
 // ========================================
+aplicarModoOscuro(obtenerModoOscuroActivo());
 conectarMenuLateral();
 mostrarAgenda();

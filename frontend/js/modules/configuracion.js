@@ -107,19 +107,6 @@ function mostrarConfiguracion() {
       ¡Datos del negocio guardados con éxito!
     </div>
 
-    <div style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 22px; border-radius: 10px; margin-bottom: 30px; max-width: 680px; box-shadow: 0 6px 14px rgba(0,0,0,0.15); border: 1px solid #334155;">
-      <h3 style="margin-top: 0; color: #f59e0b;">Próximamente: BarberOS PRO</h3>
-      <p style="font-size: 14px; margin-bottom: 12px; color: #cbd5e1; line-height: 1.5;">
-        Objetivo: <strong>reducir ausencias y ahorrar tiempo</strong> en la gestión diaria de tu barbería.
-      </p>
-      <ul style="margin: 0; padding-left: 18px; color: #e2e8f0; font-size: 14px; line-height: 1.6;">
-        <li>Recordatorios automáticos por WhatsApp a clientes.</li>
-        <li>Confirmación y cancelación de turnos en un clic.</li>
-        <li>Detección de huecos libres para recuperar ingresos.</li>
-      </ul>
-      <button style="margin-top: 14px; background: #f59e0b; color: #111827; font-weight: 700;" onclick="alert('Próximamente habilitaremos el acceso anticipado a BarberOS PRO.')">Quiero acceso anticipado</button>
-    </div>
-
     <div style="max-width: 680px; margin-bottom: 26px;">
       <h3 style="color: #111827; margin-bottom: 12px;">Resumen del Negocio</h3>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;">

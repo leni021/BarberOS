@@ -5,21 +5,28 @@
     <title>BarberOS - Iniciar Sesión</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
-<body style="display: flex; justify-content: center; align-items: center; background: #111827; height: 100vh; margin: 0;">
+<body class="auth-page">
 
-    <div style="background: white; padding: 40px; border-radius: 8px; width: 300px; text-align: center;">
-        <h2 style="margin-top: 0; color: #111827;">BarberOS</h2>
-        <p style="color: #475569; margin-bottom: 20px;">Inicia sesión en tu barbería</p>
+    <div class="auth-card">
+        <h2 class="auth-title">BarberOS</h2>
+        <p class="auth-subtitle">Inicia sesión en tu barbería</p>
         
-        <input type="email" id="loginEmail" placeholder="Correo electrónico" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;">
-        <input type="password" id="loginPassword" placeholder="Contraseña" style="width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+        <form id="formLogin">
+            <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" class="auth-input auth-input-email">
+            <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" class="auth-input auth-input-pass">
+
+            <label class="auth-remember-label">
+                <input type="checkbox" id="recordarSesion" class="auth-remember-check">
+                Mantener sesión iniciada
+            </label>
+            
+            <div id="mensajeError" class="auth-error"></div>
+            
+            <button id="btnEntrar" type="submit" class="auth-submit">Entrar</button>
+        </form>
         
-        <div id="mensajeError" style="color: #ef4444; font-size: 14px; margin-bottom: 15px; display: none;"></div>
-        
-        <button id="btnEntrar" style="width: 100%; margin-top: 0;">Entrar</button>
-        
-        <p style="margin-top: 20px; font-size: 14px; color: #475569;">
-            ¿No tienes cuenta? <a href="registro.html" style="color: #2563eb; text-decoration: none;">Regístrate aquí</a>
+        <p class="auth-footnote">
+            ¿No tienes cuenta? <a href="registro.html" class="auth-link">Regístrate aquí</a>
         </p>
     </div>
 
