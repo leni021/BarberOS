@@ -24,3 +24,6 @@ Thumbs.db
 *.tmp
 .vscode/
 
+# Local handoff/context files
+CONTEXTO_IA.md
+
