@@ -29,7 +29,7 @@ function mostrarPro() {
   document.getElementById("contenido").innerHTML = `
     <h1>BarberOS PRO</h1>
 
-    <div style="background: linear-gradient(135deg, #111827, #0f766e); color: #ecfeff; padding: 22px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 8px 18px rgba(0,0,0,0.14);">
+    <div id="cardProPrincipal" style="background: linear-gradient(135deg, #111827, #0f766e); color: #ecfeff; padding: 22px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 8px 18px rgba(0,0,0,0.14);">
       <h3 style="margin-top: 0; color: #fde68a;">Estadísticas PRO + Automatización PRO</h3>
       <p style="margin-bottom: 10px; color: #cffafe;">
         BarberOS PRO incluirá estadísticas más completas para mejorar decisiones del negocio y automatización por WhatsApp para ahorrar tiempo operativo. El modelo de pago se habilitará en una actualización futura y actualmente estamos trabajando en su lanzamiento.
@@ -42,7 +42,7 @@ function mostrarPro() {
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-width: 900px;">
+    <div id="gridProBeneficios" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-width: 900px;">
       <div style="background: white; border-radius: 8px; padding: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
         <h4 style="margin-top: 0; color: #0f172a;">Estadísticas PRO</h4>
         <ul style="color: #334155; line-height: 1.6; margin: 0; padding-left: 18px;">
@@ -59,7 +59,7 @@ function mostrarPro() {
         <ul style="color: #334155; line-height: 1.6; margin: 0; padding-left: 18px;">
           <li>Recordatorios automáticos antes del turno.</li>
           <li>Confirmación y cancelación en un clic.</li>
-          <li>Mensajes post-visita para fidelización.</li>
+          <li>Mensajes después del turno para que el cliente vuelva a reservar.</li>
           <li>Relleno de horarios liberados por cancelaciones con clientes en espera.</li>
           <li>Ofertas automáticas para clientes antiguos que hace tiempo no vuelven.</li>
         </ul>

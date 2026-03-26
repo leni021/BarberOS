@@ -255,10 +255,84 @@ function obtenerTurnos() {
   return Array.isArray(turnos) ? turnos : [];
 }
 function guardarTurnos(t)    { localStorage.setItem("turnos",    JSON.stringify(t)); }
+
+function obtenerCierresCaja() {
+  let cierres = leerJSONStorage("cierresCaja", []);
+  if (!Array.isArray(cierres)) return [];
+
+  return cierres
+    .filter((cierre) => cierre && typeof cierre === "object")
+    .map((cierre) => ({
+      fecha: String(cierre.fecha || "").trim(),
+      ingresos: Number(cierre.ingresos) || 0,
+      egresos: Number(cierre.egresos) || 0,
+      esperado: Number(cierre.esperado) || 0,
+      contado: Number(cierre.contado) || 0,
+      diferencia: Number(cierre.diferencia) || 0,
+      totalTurnosRealizados: Number(cierre.totalTurnosRealizados) || 0,
+      nota: String(cierre.nota || "").trim(),
+      creadoEn: String(cierre.creadoEn || "").trim()
+    }))
+    .filter((cierre) => cierre.fecha !== "");
+}
+
+function guardarCierresCaja(cierres) {
+  if (!Array.isArray(cierres)) {
+    localStorage.setItem("cierresCaja", JSON.stringify([]));
+    return;
+  }
+  localStorage.setItem("cierresCaja", JSON.stringify(cierres));
+}
+
+function obtenerProductos() {
+  let productos = leerJSONStorage("productos", []);
+  if (!Array.isArray(productos)) return [];
+
+  return productos
+    .filter((producto) => producto && typeof producto === "object")
+    .map((producto) => ({
+      nombre: String(producto.nombre || "").trim(),
+      categoria: String(producto.categoria || "").trim(),
+      precio: normalizarPrecioServicio(producto.precio),
+      stock: Math.max(0, parseInt(producto.stock, 10) || 0)
+    }))
+    .filter((producto) => producto.nombre !== "");
+}
+
+function guardarProductos(productos) {
+  if (!Array.isArray(productos)) {
+    localStorage.setItem("productos", JSON.stringify([]));
+    return;
+  }
+
+  let limpios = productos
+    .map((producto) => ({
+      nombre: String(producto && producto.nombre ? producto.nombre : "").trim(),
+      categoria: String(producto && producto.categoria ? producto.categoria : "").trim(),
+      precio: normalizarPrecioServicio(producto && producto.precio),
+      stock: Math.max(0, parseInt(producto && producto.stock, 10) || 0)
+    }))
+    .filter((producto) => producto.nombre !== "");
+
+  localStorage.setItem("productos", JSON.stringify(limpios));
+}
  
 function obtenerBarberos() {
-  let base = leerJSONStorage("barberos", ["Carlos", "Miguel", "Juan"]);
-  if (!Array.isArray(base)) return ["Carlos", "Miguel", "Juan"];
+  let rawBarberos = localStorage.getItem("barberos");
+  let esPrimeraCarga = rawBarberos === null;
+  let base;
+
+  if (esPrimeraCarga) {
+    base = ["Carlos", "Miguel", "Juan"];
+  } else {
+    try {
+      base = JSON.parse(rawBarberos);
+    } catch (_error) {
+      base = [];
+    }
+  }
+
+  if (!Array.isArray(base)) base = [];
 
   let resultado = [];
   let vistos = new Set();
@@ -272,7 +346,11 @@ function obtenerBarberos() {
     }
   });
 
-  return resultado.length > 0 ? resultado : ["Carlos", "Miguel", "Juan"];
+  if (resultado.length === 0 && esPrimeraCarga) {
+    return ["Carlos", "Miguel", "Juan"];
+  }
+
+  return resultado;
 }
 function guardarBarberos(b)  { localStorage.setItem("barberos",  JSON.stringify(b)); }
  
@@ -283,8 +361,21 @@ function normalizarPrecioServicio(precio) {
 }
 
 function obtenerServiciosConPrecio() {
-  let base = leerJSONStorage("servicios", ["Corte", "Barba", "Corte + barba"]);
-  if (!Array.isArray(base)) base = ["Corte", "Barba", "Corte + barba"];
+  let rawServicios = localStorage.getItem("servicios");
+  let esPrimeraCarga = rawServicios === null;
+  let base;
+
+  if (esPrimeraCarga) {
+    base = ["Corte", "Barba", "Corte + barba"];
+  } else {
+    try {
+      base = JSON.parse(rawServicios);
+    } catch (_error) {
+      base = [];
+    }
+  }
+
+  if (!Array.isArray(base)) base = [];
 
   let resultado = [];
   let vistos = new Set();
@@ -307,7 +398,7 @@ function obtenerServiciosConPrecio() {
     }
   });
 
-  if (resultado.length === 0) {
+  if (resultado.length === 0 && esPrimeraCarga) {
     return [
       { nombre: "Corte", precio: 0 },
       { nombre: "Barba", precio: 0 },

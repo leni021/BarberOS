@@ -39,6 +39,37 @@ function mostrarVersionEnPantallaAuth() {
     : "Version instalada: desconocida";
 }
 
+function mostrarErrorRegistro(mensaje) {
+  let contenedor = document.getElementById("mensajeRegistro");
+  if (!contenedor) return;
+  contenedor.innerText = mensaje;
+  contenedor.style.display = "block";
+}
+
+function limpiarErrorRegistro() {
+  let contenedor = document.getElementById("mensajeRegistro");
+  if (!contenedor) return;
+  contenedor.innerText = "";
+  contenedor.style.display = "none";
+}
+
+function configurarVisualizadorPassword() {
+  let toggles = document.querySelectorAll(".auth-password-toggle[data-password-target]");
+  if (!toggles || toggles.length === 0) return;
+
+  toggles.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      let targetId = btn.getAttribute("data-password-target");
+      let input = document.getElementById(targetId);
+      if (!input) return;
+
+      let mostrar = input.type === "password";
+      input.type = mostrar ? "text" : "password";
+      btn.innerText = mostrar ? "Ocultar" : "Mostrar";
+    });
+  });
+}
+
 function leerJSONSeguro(clave, fallback) {
   try {
     let raw = localStorage.getItem(clave);
@@ -189,13 +220,17 @@ async function registrarBarberia() {
   let password = document.getElementById("regPassword").value.trim();
   let btnRegistrar = document.getElementById("btnRegistrar");
 
+  limpiarErrorRegistro();
+
   if (!negocio || !dueno || !email || !password) {
-    alert("Por favor, completa todos los campos para registrarte.");
+    mostrarErrorRegistro("Por favor, completa todos los campos para registrarte.");
+    if (btnRegistrar) btnRegistrar.disabled = false;
     return;
   }
 
   if (password.length < 6) {
-    alert("La contrasena debe tener al menos 6 caracteres.");
+    mostrarErrorRegistro("La contrasena debe tener al menos 6 caracteres.");
+    if (btnRegistrar) btnRegistrar.disabled = false;
     return;
   }
 
@@ -237,7 +272,7 @@ async function registrarBarberia() {
     crearLicenciaTrial();
   }
 
-  alert("Barberia registrada con exito. Ya podes iniciar sesion en tu sistema de gestion gratuito.");
+  limpiarErrorRegistro();
   window.location.href = construirRutaConVersion("login.html");
 }
 
@@ -281,6 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRegistrar = document.getElementById("btnRegistrar");
 
   mostrarVersionEnPantallaAuth();
+  configurarVisualizadorPassword();
 
   if (window.location.pathname.endsWith("/login.html") || window.location.pathname.endsWith("\\login.html") || window.location.pathname.includes("login.html")) {
     if (localStorage.getItem("sesionActiva") === "true" && localStorage.getItem("sesionRecordada") === "true") {

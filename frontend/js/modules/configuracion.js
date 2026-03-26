@@ -31,6 +31,24 @@ function obtenerMontoTurno(turno) {
   if (Number.isFinite(Number(turno.montoServicio))) {
     return Number(turno.montoServicio);
   }
+
+  if (Array.isArray(turno.productos) && turno.productos.length > 0) {
+    let totalProductos = turno.productos.reduce((acum, nombre) => {
+      let producto = obtenerProductos().find((item) => String(item.nombre || "").trim().toLowerCase() === String(nombre || "").trim().toLowerCase());
+      return acum + Number(producto && producto.precio ? producto.precio : 0);
+    }, 0);
+
+    let totalServicios = Array.isArray(turno.servicios) && turno.servicios.length > 0
+      ? turno.servicios.reduce((acum, nombre) => acum + Number(obtenerPrecioServicio(nombre) || 0), 0)
+      : Number(obtenerPrecioServicio(turno.servicio) || 0);
+
+    return totalServicios + totalProductos;
+  }
+
+  if (Array.isArray(turno.servicios) && turno.servicios.length > 0) {
+    return turno.servicios.reduce((acum, nombre) => acum + Number(obtenerPrecioServicio(nombre) || 0), 0);
+  }
+
   return obtenerPrecioServicio(turno.servicio);
 }
 
@@ -58,8 +76,14 @@ function calcularResumenNegocio() {
     realizados += 1;
     let monto = obtenerMontoTurno(turno);
 
-    let nombreServicio = String(turno.servicio || "Sin servicio");
-    serviciosVendidos[nombreServicio] = (serviciosVendidos[nombreServicio] || 0) + 1;
+    let serviciosDelTurno = Array.isArray(turno.servicios) && turno.servicios.length > 0
+      ? turno.servicios
+      : [String(turno.servicio || "Sin servicio")];
+
+    serviciosDelTurno.forEach((nombre) => {
+      let nombreServicio = String(nombre || "Sin servicio");
+      serviciosVendidos[nombreServicio] = (serviciosVendidos[nombreServicio] || 0) + 1;
+    });
 
     let fechaTurno = turno.fecha ? new Date(`${turno.fecha}T00:00:00`) : null;
     if (!fechaTurno || Number.isNaN(fechaTurno.getTime())) return;
@@ -107,40 +131,40 @@ function mostrarConfiguracion() {
       ¡Datos del negocio guardados con éxito!
     </div>
 
-    <div style="max-width: 680px; margin-bottom: 26px;">
+    <div id="cardResumenNegocio" style="margin-bottom: 26px;">
       <h3 style="color: #111827; margin-bottom: 12px;">Resumen del Negocio</h3>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;">
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Ingresos de hoy</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(formatearMonedaConfig(resumen.ingresosHoy))}</div>
+      <div id="gridResumenNegocio">
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Ingresos de hoy</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosHoy))}</div>
         </div>
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Ingresos semanales</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(formatearMonedaConfig(resumen.ingresosSemana))}</div>
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Ingresos semanales</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosSemana))}</div>
         </div>
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Ingresos mensuales</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(formatearMonedaConfig(resumen.ingresosMes))}</div>
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Ingresos mensuales</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosMes))}</div>
         </div>
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Ticket promedio</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(formatearMonedaConfig(resumen.ticketPromedio))}</div>
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Ticket promedio</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ticketPromedio))}</div>
         </div>
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Turnos realizados</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(resumen.realizados)}</div>
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Turnos realizados</div>
+          <div class="resumen-kpi-valor">${escaparHTML(resumen.realizados)}</div>
         </div>
-        <div style="background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-          <div style="font-size: 12px; color: #64748b;">Turnos cancelados</div>
-          <div style="font-size: 20px; font-weight: 700; color: #0f172a;">${escaparHTML(resumen.cancelados)}</div>
+        <div class="resumen-kpi">
+          <div class="resumen-kpi-label">Turnos cancelados</div>
+          <div class="resumen-kpi-valor">${escaparHTML(resumen.cancelados)}</div>
         </div>
       </div>
-      <div style="margin-top: 10px; color: #334155; font-size: 14px;">
+      <div id="servicioTopResumen" style="margin-top: 10px; color: #334155; font-size: 14px;">
         Servicio más vendido: <strong>${escaparHTML(resumen.servicioTop)}</strong>
       </div>
     </div>
 
-    <div style="max-width: 500px;">
+    <div id="cardDatosOperativos">
       <h3 style="color: #111827;">Datos Operativos</h3>
       <label style="color: #475569; font-size: 14px;">Nombre de la Barbería</label>
       <input id="confNegocio" value="${negocioSeguro}">

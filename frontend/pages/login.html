@@ -15,7 +15,11 @@
         
         <form id="formLogin">
             <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" class="auth-input auth-input-email">
-            <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" class="auth-input auth-input-pass">
+
+            <div class="auth-password-group auth-input-pass">
+                <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" class="auth-input">
+                <button type="button" class="auth-password-toggle" data-password-target="loginPassword">Mostrar</button>
+            </div>
 
             <label class="auth-remember-label">
                 <input type="checkbox" id="recordarSesion" class="auth-remember-check">
@@ -33,6 +37,7 @@
     </div>
 
     <script src="../js/error-monitor.js"></script>
+    <script src="../js/storage.js"></script>
     <script src="../js/auth.js"></script>
 </body>
 </html>

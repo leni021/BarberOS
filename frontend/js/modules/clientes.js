@@ -34,6 +34,8 @@ function limpiarMensajeClientes() {
   contenedor.innerText = "";
 }
 
+let indiceClienteEnEdicion = -1;
+
 function mostrarClientes() {
   recargarDatos();
 
@@ -42,7 +44,7 @@ function mostrarClientes() {
 
     <div id="mensajeClientes" style="display:none; margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px;"></div>
 
-    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; max-width: 500px;">
+    <div id="cardNuevoCliente" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
       <h3 style="margin-top: 0; color: #111827;">Nuevo Cliente</h3>
 
       <div id="errorCliente" style="color: #ef4444; font-size: 14px; margin-bottom: 10px; display: none;"></div>
@@ -116,6 +118,9 @@ function eliminarCliente(indice) {
     let nombreCliente = normalizarNombreCliente(clienteAEliminar.nombre);
     let turnos = obtenerTurnos();
     let clienteEnUso = turnos.some((turno) => {
+      let estadoTurno = String(turno && turno.estado ? turno.estado : "Pendiente").trim().toLowerCase();
+      if (estadoTurno === "cancelado") return false;
+
       let nombreTurno = turno.cliente || turno.nombre || "";
       return normalizarNombreCliente(nombreTurno) === nombreCliente;
     });
@@ -145,6 +150,27 @@ function actualizarListaClientes() {
     let li = document.createElement("li");
     li.className = "turno-item";
 
+    if (indice === indiceClienteEnEdicion) {
+      let nombreEdit = escaparHTML(cliente.nombre || "");
+      let telefonoEdit = escaparHTML(cliente.telefono || "");
+      let obsEdit = escaparHTML(cliente.observaciones || "");
+
+      li.innerHTML = `
+        <div class="turno-info" style="width:100%;">
+          <input id="editNombreCliente" value="${nombreEdit}" placeholder="Nombre completo" style="margin-top:0; margin-bottom:8px;">
+          <input id="editTelefonoCliente" value="${telefonoEdit}" placeholder="Teléfono" style="margin-top:0; margin-bottom:8px;">
+          <input id="editObservacionesCliente" value="${obsEdit}" placeholder="Observaciones" style="margin-top:0; margin-bottom:8px;">
+          <div class="acciones-item">
+            <button onclick="guardarEdicionCliente(${indice})">Guardar</button>
+            <button onclick="cancelarEdicionCliente()" style="background:#475569;">Cancelar</button>
+          </div>
+        </div>
+      `;
+
+      lista.appendChild(li);
+      return;
+    }
+
     let nombreSeguro = escaparHTML(cliente.nombre || "");
     let telefonoSeguro = escaparHTML(cliente.telefono || "");
     let observacionesSeguro = escaparHTML(cliente.observaciones || "");
@@ -158,9 +184,50 @@ function actualizarListaClientes() {
         <div class="turno-detalle" style="font-size: 12px; margin-top: 6px; color: #2563eb;">Última visita: ${fechaSeguro}</div>
       </div>
 
-      <button class="btn-eliminar" onclick="eliminarCliente(${indice})">Eliminar</button>
+      <div class="acciones-item">
+        <button class="btn-accion" onclick="iniciarEdicionCliente(${indice})">Editar</button>
+        <button class="btn-eliminar" onclick="eliminarCliente(${indice})">Eliminar</button>
+      </div>
     `;
 
     lista.appendChild(li);
   });
+}
+
+function iniciarEdicionCliente(indice) {
+  indiceClienteEnEdicion = indice;
+  actualizarListaClientes();
+}
+
+function cancelarEdicionCliente() {
+  indiceClienteEnEdicion = -1;
+  actualizarListaClientes();
+}
+
+function guardarEdicionCliente(indice) {
+  let nombre = String(document.getElementById("editNombreCliente")?.value || "").trim();
+  let telefono = String(document.getElementById("editTelefonoCliente")?.value || "").trim();
+  let observaciones = String(document.getElementById("editObservacionesCliente")?.value || "").trim();
+
+  if (!nombre) {
+    mostrarMensajeClientes("El nombre del cliente no puede quedar vacío.", "error");
+    return;
+  }
+
+  let nombreNormalizado = normalizarNombreCliente(nombre);
+  let duplicado = clientes.some((cliente, i) => i !== indice && normalizarNombreCliente(cliente.nombre) === nombreNormalizado);
+  if (duplicado) {
+    mostrarMensajeClientes("Ya existe otro cliente con ese nombre.", "error");
+    return;
+  }
+
+  if (!clientes[indice]) return;
+  clientes[indice].nombre = nombre;
+  clientes[indice].telefono = telefono;
+  clientes[indice].observaciones = observaciones;
+
+  guardarClientes(clientes);
+  indiceClienteEnEdicion = -1;
+  mostrarMensajeClientes("Cliente actualizado correctamente.", "ok");
+  actualizarListaClientes();
 }

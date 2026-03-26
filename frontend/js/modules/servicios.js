@@ -65,6 +65,8 @@ function limpiarMensajeServicios() {
   contenedor.innerText = "";
 }
 
+let indiceServicioEnEdicion = -1;
+
 function mostrarServicios() {
   recargarDatos();
 
@@ -75,7 +77,7 @@ function mostrarServicios() {
 
     <div id="mensajeServicios" style="display:none; margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px;"></div>
 
-    <form id="formServicio" style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 520px; margin-bottom: 16px;">
+    <form id="formServicio" style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 16px;">
       <input id="nuevoServicio" placeholder="Nombre del servicio" style="margin-bottom: 10px;">
       <input id="precioServicio" type="number" min="0" step="0.01" placeholder="Precio (ej: 4500)" style="margin-top: 0; margin-bottom: 10px;">
       <button type="submit">Agregar servicio</button>
@@ -198,6 +200,25 @@ function actualizarListaServicios(serviciosConPrecio = obtenerServiciosConPrecio
     let li = document.createElement("li");
     li.className = "turno-item";
 
+    if (indice === indiceServicioEnEdicion) {
+      let nombreEdit = escaparHTML(servicio.nombre || "");
+      let precioEdit = Number(servicio.precio || 0);
+
+      li.innerHTML = `
+        <div class="turno-info" style="width:100%;">
+          <input id="editNombreServicio" value="${nombreEdit}" placeholder="Nombre del servicio" style="margin-top:0; margin-bottom:8px;">
+          <input id="editPrecioServicio" type="number" min="0" step="0.01" value="${precioEdit}" placeholder="Precio" style="margin-top:0; margin-bottom:8px;">
+          <div class="acciones-item">
+            <button onclick="guardarEdicionServicio(${indice})">Guardar</button>
+            <button onclick="cancelarEdicionServicio()" style="background:#475569;">Cancelar</button>
+          </div>
+        </div>
+      `;
+
+      lista.appendChild(li);
+      return;
+    }
+
     let servicioSeguro = escaparHTML(servicio.nombre);
     let precioSeguro = escaparHTML(formatearPrecioServicio(servicio.precio));
 
@@ -207,9 +228,54 @@ function actualizarListaServicios(serviciosConPrecio = obtenerServiciosConPrecio
         <div class="turno-detalle">Precio: ${precioSeguro}</div>
       </div>
 
-      <button class="btn-eliminar" onclick="eliminarServicio(${indice})">Eliminar</button>
+      <div class="acciones-item">
+        <button class="btn-accion" onclick="iniciarEdicionServicio(${indice})">Editar</button>
+        <button class="btn-eliminar" onclick="eliminarServicio(${indice})">Eliminar</button>
+      </div>
     `;
 
     lista.appendChild(li);
   });
+}
+
+function iniciarEdicionServicio(indice) {
+  indiceServicioEnEdicion = indice;
+  actualizarListaServicios(obtenerServiciosConPrecioSeguros());
+}
+
+function cancelarEdicionServicio() {
+  indiceServicioEnEdicion = -1;
+  actualizarListaServicios(obtenerServiciosConPrecioSeguros());
+}
+
+function guardarEdicionServicio(indice) {
+  let nombre = String(document.getElementById("editNombreServicio")?.value || "").trim();
+  let precioTexto = String(document.getElementById("editPrecioServicio")?.value || "").replace(",", ".");
+  let precio = precioTexto === "" ? 0 : Number(precioTexto);
+
+  if (!nombre) {
+    mostrarMensajeServicios("El nombre del servicio no puede quedar vacío.", "error");
+    return;
+  }
+  if (!Number.isFinite(precio) || precio < 0) {
+    mostrarMensajeServicios("Ingresa un precio válido mayor o igual a 0.", "error");
+    return;
+  }
+
+  let serviciosConPrecio = obtenerServiciosConPrecioSeguros();
+  let nombreNormalizado = normalizarNombreServicio(nombre);
+  let duplicado = serviciosConPrecio.some((servicio, i) => i !== indice && normalizarNombreServicio(servicio.nombre) === nombreNormalizado);
+  if (duplicado) {
+    mostrarMensajeServicios("Ya existe otro servicio con ese nombre.", "error");
+    return;
+  }
+
+  if (!serviciosConPrecio[indice]) return;
+  serviciosConPrecio[indice] = { nombre, precio };
+  guardarServiciosConPrecio(serviciosConPrecio);
+  if (typeof recargarDatos === "function") recargarDatos();
+
+  indiceServicioEnEdicion = -1;
+  mostrarMensajeServicios("Servicio actualizado correctamente.", "ok");
+  actualizarListaServicios(obtenerServiciosConPrecioSeguros());
 }

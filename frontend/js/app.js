@@ -123,6 +123,8 @@ function conectarMenuLateral() {
   const btnClientes = document.getElementById("btnClientes");
   const btnBarberos = document.getElementById("btnBarberos");
   const btnServicios = document.getElementById("btnServicios");
+  const btnProductos = document.getElementById("btnProductos");
+  const btnCierreCaja = document.getElementById("btnCierreCaja");
   const btnPro = document.getElementById("btnPro");
   const btnConfiguracion = document.getElementById("btnConfiguracion");
   const btnCerrarSesion = document.getElementById("btnCerrarSesion");
@@ -142,6 +144,14 @@ function conectarMenuLateral() {
 
   if (btnServicios) {
     btnServicios.addEventListener("click", mostrarServicios);
+  }
+
+  if (btnProductos && typeof mostrarProductos === "function") {
+    btnProductos.addEventListener("click", mostrarProductos);
+  }
+
+  if (btnCierreCaja && typeof mostrarCierreCaja === "function") {
+    btnCierreCaja.addEventListener("click", mostrarCierreCaja);
   }
 
   if (btnPro && typeof mostrarPro === "function") {
