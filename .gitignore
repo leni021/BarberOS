@@ -27,3 +27,11 @@ Thumbs.db
 # Local handoff/context files
 CONTEXTO_IA.md
 
+# Base de datos local (datos reales de clientes - NUNCA subir)
+*.db
+*.db-shm
+*.db-wal
+barberos-local.db
+
+# Backups locales
+*.backup.json

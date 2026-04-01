@@ -134,6 +134,9 @@ function actualizarListaBarberos() {
     li.innerHTML = `
       <div class="turno-info">
         <div class="turno-nombre">${barberoSeguro}</div>
+        <div class="meta-row">
+          <span class="meta-chip meta-chip-ok">Disponible para agenda</span>
+        </div>
       </div>
 
       <div class="acciones-item">

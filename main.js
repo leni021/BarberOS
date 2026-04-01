@@ -1,8 +1,9 @@
-const { app, BrowserWindow, dialog, shell } = require('electron')
+const { app, BrowserWindow, dialog, shell, ipcMain, Menu, globalShortcut } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const fs = require('fs')
 const path = require('path')
 const { URL } = require('url')
+const localDb = require('./backend/local-db')
 
 let mainWindow = null
 let ultimoBloqueProgreso = -1
@@ -140,7 +141,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: true
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 
@@ -160,6 +162,73 @@ function createWindow() {
   mainWindow.loadFile('frontend/pages/login.html', {
     query: {
       v: versionActual
+    }
+  })
+}
+
+function configurarDbIpc() {
+  ipcMain.on('db:status', (event) => {
+    try {
+      event.returnValue = localDb.getStatus()
+    } catch (_error) {
+      event.returnValue = { available: false, engine: 'localStorage', persistent: false }
+    }
+  })
+
+  ipcMain.on('db:read', (event, payload) => {
+    try {
+      let key = payload && payload.key ? String(payload.key) : ''
+      if (!key) {
+        event.returnValue = null
+        return
+      }
+      event.returnValue = localDb.readValue(key)
+    } catch (_error) {
+      event.returnValue = null
+    }
+  })
+
+  ipcMain.on('db:write', (event, payload) => {
+    try {
+      let key = payload && payload.key ? String(payload.key) : ''
+      if (!key) {
+        event.returnValue = false
+        return
+      }
+      let value = payload && payload.value !== undefined ? String(payload.value) : ''
+      event.returnValue = localDb.writeValue(key, value)
+    } catch (_error) {
+      event.returnValue = false
+    }
+  })
+
+  ipcMain.on('db:remove', (event, payload) => {
+    try {
+      let key = payload && payload.key ? String(payload.key) : ''
+      if (!key) {
+        event.returnValue = false
+        return
+      }
+      event.returnValue = localDb.removeValue(key)
+    } catch (_error) {
+      event.returnValue = false
+    }
+  })
+
+  ipcMain.on('db:keys', (event) => {
+    try {
+      event.returnValue = localDb.listKeys()
+    } catch (_error) {
+      event.returnValue = []
+    }
+  })
+
+  ipcMain.on('db:bulkWrite', (event, payload) => {
+    try {
+      let entries = payload && Array.isArray(payload.entries) ? payload.entries : []
+      event.returnValue = localDb.bulkWrite(entries)
+    } catch (_error) {
+      event.returnValue = false
     }
   })
 }
@@ -254,9 +323,25 @@ function programarChequeoActualizaciones() {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
+
+  // Solo en desarrollo: habilitar Ctrl+R para recargar la ventana
+  if (!app.isPackaged) {
+    app.on('browser-window-focus', () => {
+      globalShortcut.register('CommandOrControl+R', () => {
+        if (mainWindow) mainWindow.webContents.reload()
+      })
+    })
+    app.on('browser-window-blur', () => {
+      globalShortcut.unregister('CommandOrControl+R')
+    })
+  }
   let userDataPath = app.getPath('userData')
   rutaLogUpdater = path.join(userDataPath, 'update.log')
   escribirLogUpdater(`Logger local inicializado en: ${rutaLogUpdater}`)
+
+  localDb.initLocalDb(userDataPath)
+  configurarDbIpc()
 
   createWindow()
   configurarAutoUpdate()

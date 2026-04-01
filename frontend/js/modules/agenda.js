@@ -11,18 +11,83 @@ function esTurnoCancelado(turno) {
   return estado === "cancelado";
 }
 
-function formatearMonedaAgenda(valor) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(Number(valor) || 0);
-}
+// formatearMoneda → utils.js
+
 
 let indiceTurnoEnEdicion = -1;
 let serviciosSeleccionadosEnFormulario = [];
 let productosSeleccionadosEnFormulario = [];
+let paginaAgendaActual = 1;
+const TAMANO_PAGINA_AGENDA = 50;
+let filtrosAgenda = {
+  texto: "",
+  fecha: "",
+  estado: "Todos",
+  barbero: "Todos"
+};
+
+function normalizarEstadoAgenda(valor) {
+  return String(valor || "").trim().toLowerCase();
+}
+
+function obtenerTurnosFiltradosConIndice() {
+  let listaTurnosActuales = obtenerTurnos();
+  let texto = normalizarAgendaTexto(filtrosAgenda.texto || "");
+  let fecha = String(filtrosAgenda.fecha || "").trim();
+  let estado = normalizarEstadoAgenda(filtrosAgenda.estado || "Todos");
+  let barbero = normalizarAgendaTexto(filtrosAgenda.barbero || "Todos");
+
+  return listaTurnosActuales
+    .map((turno, indiceOriginal) => ({ turno, indiceOriginal }))
+    .filter(({ turno }) => {
+      if (fecha && String(turno.fecha || "") !== fecha) return false;
+
+      if (estado !== "todos" && normalizarEstadoAgenda(turno.estado || "Pendiente") !== estado) {
+        return false;
+      }
+
+      if (barbero !== "todos" && normalizarAgendaTexto(turno.barbero || "") !== barbero) {
+        return false;
+      }
+
+      if (!texto) return true;
+
+      let nombre = String(turno.cliente || turno.nombre || "");
+      let servicios = normalizarServiciosTurno(turno).join(" ");
+      let productos = normalizarProductosTurno(turno).join(" ");
+      let compuesto = `${nombre} ${turno.fecha || ""} ${turno.hora || ""} ${turno.barbero || ""} ${turno.estado || ""} ${servicios} ${productos}`;
+
+      return normalizarAgendaTexto(compuesto).includes(texto);
+    });
+}
+
+function actualizarFiltrosAgendaDesdeUI() {
+  let inputTexto = document.getElementById("filtroAgendaTexto");
+  let inputFecha = document.getElementById("filtroAgendaFecha");
+  let selectEstado = document.getElementById("filtroAgendaEstado");
+  let selectBarbero = document.getElementById("filtroAgendaBarbero");
+
+  filtrosAgenda.texto = inputTexto ? String(inputTexto.value || "") : "";
+  filtrosAgenda.fecha = inputFecha ? String(inputFecha.value || "") : "";
+  filtrosAgenda.estado = selectEstado ? String(selectEstado.value || "Todos") : "Todos";
+  filtrosAgenda.barbero = selectBarbero ? String(selectBarbero.value || "Todos") : "Todos";
+}
+
+function limpiarFiltrosAgenda() {
+  filtrosAgenda = {
+    texto: "",
+    fecha: "",
+    estado: "Todos",
+    barbero: "Todos"
+  };
+  paginaAgendaActual = 1;
+  mostrarAgenda();
+}
+
+function irPaginaAgenda(nuevaPagina) {
+  paginaAgendaActual = Math.max(1, Number(nuevaPagina) || 1);
+  actualizarListaTurnos();
+}
 
 function normalizarServiciosTurno(turno) {
   if (Array.isArray(turno && turno.servicios)) {
@@ -83,7 +148,7 @@ function actualizarMontoServicioSeleccionado() {
   }
 
   let monto = calcularMontoServicios(serviciosSeleccionadosEnFormulario) + calcularMontoProductos(productosSeleccionadosEnFormulario);
-  etiquetaMonto.innerText = `Monto estimado: ${formatearMonedaAgenda(monto)}`;
+  etiquetaMonto.innerText = `Monto estimado: ${formatearMoneda(monto)}`;
 }
 
 function renderServiciosSeleccionadosAgenda() {
@@ -200,18 +265,11 @@ function mostrarAgenda() {
   let listaBarberos = obtenerBarberos();
   let listaServicios = obtenerServiciosConPrecio();
   let listaProductos = obtenerProductos();
+  let estadosAgenda = ["Todos", "Pendiente", "Confirmado", "Realizado", "No asistió", "Cancelado"];
 
-  // 3. Aviso de seguridad si faltan datos base
-  let alertaFaltanDatos = "";
-  if (listaClientes.length === 0 || listaBarberos.length === 0 || (listaServicios.length === 0 && listaProductos.length === 0)) {
-    alertaFaltanDatos = `
-      <div style="background-color: #eff6ff; color: #1e3a8a; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px;">
-        <strong>Tip:</strong> Para agendar se requiere fecha, hora y barbero. Cliente/servicios/productos son opcionales.
-      </div>
-    `;
-  }
+  let mostrarTipAgenda = listaClientes.length === 0 || listaBarberos.length === 0 || (listaServicios.length === 0 && listaProductos.length === 0);
 
-  // 4. Mapeo de opciones dinámicas (usando nombres como paso intermedio hacia IDs)
+  // 3. Mapeo de opciones dinámicas (usando nombres como paso intermedio hacia IDs)
   let opcionesClientes = listaClientes.map((c) => {
     let nombreSeguro = escaparHTML(c.nombre);
     return `<option value="${nombreSeguro}">${nombreSeguro}</option>`;
@@ -222,20 +280,33 @@ function mostrarAgenda() {
   }).join("");
   let opcionesServicios = listaServicios.map((s) => {
     let nombreSeguro = escaparHTML(s.nombre);
-    let precioSeguro = escaparHTML(formatearMonedaAgenda(s.precio));
+    let precioSeguro = escaparHTML(formatearMoneda(s.precio));
     return `<option value="${nombreSeguro}">${nombreSeguro} - ${precioSeguro}</option>`;
   }).join("");
   let opcionesProductos = listaProductos.map((p) => {
     let nombreSeguro = escaparHTML(p.nombre);
-    let precioSeguro = escaparHTML(formatearMonedaAgenda(p.precio));
+    let precioSeguro = escaparHTML(formatearMoneda(p.precio));
     return `<option value="${nombreSeguro}">${nombreSeguro} - ${precioSeguro}</option>`;
   }).join("");
+  let opcionesFiltroEstado = estadosAgenda.map((estado) => {
+    let estadoSeguro = escaparHTML(estado);
+    let selected = filtrosAgenda.estado === estado ? "selected" : "";
+    return `<option value="${estadoSeguro}" ${selected}>${estadoSeguro}</option>`;
+  }).join("");
+  let opcionesFiltroBarbero = [`<option value="Todos">Todos los barberos</option>`]
+    .concat(
+      listaBarberos.map((b) => {
+        let nombreSeguro = escaparHTML(b);
+        let selected = filtrosAgenda.barbero === b ? "selected" : "";
+        return `<option value="${nombreSeguro}" ${selected}>${nombreSeguro}</option>`;
+      })
+    )
+    .join("");
 
-  // 5. Construcción de la interfaz sin emojis y usando tus clases de style.css
+  // 4. Construcción de la interfaz sin emojis y usando tus clases de style.css
   document.getElementById("contenido").innerHTML = `
     <h1>Agenda - ${cuenta.negocio || "Mi Barbería"}</h1>
-
-    ${alertaFaltanDatos}
+    ${mostrarTipAgenda ? '<div style="max-width:760px; margin-bottom:12px; background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; font-size:14px;"><strong>Tip:</strong> Para agendar se requiere fecha, hora y barbero. Cliente/servicios/productos son opcionales.</div>' : ''}
 
     <div id="cardNuevoTurno" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
         <h3 style="margin-top: 0; color: #111827;">Nuevo Turno</h3>
@@ -301,8 +372,44 @@ function mostrarAgenda() {
     </div>
 
     <h2>Lista de Turnos</h2>
+    <div class="agenda-filtros">
+      <div class="agenda-filtro-group">
+        <label>Buscar</label>
+        <input id="filtroAgendaTexto" type="text" placeholder="Cliente, servicio, estado..." value="${escaparHTML(filtrosAgenda.texto || "")}">
+      </div>
+      <div class="agenda-filtro-group">
+        <label>Fecha</label>
+        <input id="filtroAgendaFecha" type="date" value="${escaparHTML(filtrosAgenda.fecha || "")}">
+      </div>
+      <div class="agenda-filtro-group">
+        <label>Estado</label>
+        <select id="filtroAgendaEstado">${opcionesFiltroEstado}</select>
+      </div>
+      <div class="agenda-filtro-group">
+        <label>Barbero</label>
+        <select id="filtroAgendaBarbero">${opcionesFiltroBarbero}</select>
+      </div>
+      <button type="button" class="agenda-accion-secundaria" onclick="limpiarFiltrosAgenda()">Limpiar filtros</button>
+    </div>
+    <div id="resumenPaginacionAgenda" class="agenda-resumen"></div>
     <ul id="listaTurnos"></ul>
+    <div id="controlesPaginacionAgenda" class="agenda-paginacion"></div>
   `;
+
+  ["filtroAgendaTexto", "filtroAgendaFecha", "filtroAgendaEstado", "filtroAgendaBarbero"].forEach((id) => {
+    let el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => {
+      actualizarFiltrosAgendaDesdeUI();
+      paginaAgendaActual = 1;
+      actualizarListaTurnos();
+    });
+    el.addEventListener("change", () => {
+      actualizarFiltrosAgendaDesdeUI();
+      paginaAgendaActual = 1;
+      actualizarListaTurnos();
+    });
+  });
 
   actualizarListaTurnos();
 
@@ -441,10 +548,44 @@ function actualizarListaTurnos() {
   let lista = document.getElementById("listaTurnos");
   if (!lista) return;
 
-  lista.innerHTML = "";
-  let listaTurnosActuales = obtenerTurnos();
+  let resumenPaginacion = document.getElementById("resumenPaginacionAgenda");
+  let controlesPaginacion = document.getElementById("controlesPaginacionAgenda");
 
-  listaTurnosActuales.forEach((turno, indice) => {
+  lista.innerHTML = "";
+  let turnosFiltrados = obtenerTurnosFiltradosConIndice();
+
+  let total = turnosFiltrados.length;
+  let totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_AGENDA));
+  if (paginaAgendaActual > totalPaginas) paginaAgendaActual = totalPaginas;
+
+  let inicio = (paginaAgendaActual - 1) * TAMANO_PAGINA_AGENDA;
+  let fin = inicio + TAMANO_PAGINA_AGENDA;
+  let paginaItems = turnosFiltrados.slice(inicio, fin);
+
+  if (resumenPaginacion) {
+    if (total === 0) {
+      resumenPaginacion.innerText = "Sin resultados para los filtros aplicados.";
+    } else {
+      resumenPaginacion.innerText = `Mostrando ${inicio + 1}-${Math.min(fin, total)} de ${total} turnos (Página ${paginaAgendaActual}/${totalPaginas})`;
+    }
+  }
+
+  if (controlesPaginacion) {
+    if (total <= TAMANO_PAGINA_AGENDA) {
+      controlesPaginacion.innerHTML = "";
+    } else {
+      let deshabilitarPrev = paginaAgendaActual <= 1 ? "disabled" : "";
+      let deshabilitarNext = paginaAgendaActual >= totalPaginas ? "disabled" : "";
+      controlesPaginacion.innerHTML = `
+        <button type="button" ${deshabilitarPrev} onclick="irPaginaAgenda(${paginaAgendaActual - 1})" style="margin:0;">Anterior</button>
+        <button type="button" ${deshabilitarNext} onclick="irPaginaAgenda(${paginaAgendaActual + 1})" style="margin:0;">Siguiente</button>
+      `;
+    }
+  }
+
+  if (total === 0) return;
+
+  paginaItems.forEach(({ turno, indiceOriginal }) => {
     let li = document.createElement("li");
     li.className = "turno-item"; 
 
@@ -466,7 +607,7 @@ function actualizarListaTurnos() {
     let servicioMostrar = escaparHTML(serviciosTurno.length > 0 ? serviciosTurno.join(", ") : (turno.servicio || "Servicio Desconocido"));
     let productoMostrar = escaparHTML(productosTurno.length > 0 ? productosTurno.join(", ") : (turno.producto || "Sin productos"));
     let montoTurno = Number.isFinite(Number(turno.montoServicio)) ? Number(turno.montoServicio) : (calcularMontoServicios(serviciosTurno) + calcularMontoProductos(productosTurno));
-    let montoMostrar = escaparHTML(formatearMonedaAgenda(montoTurno));
+    let montoMostrar = escaparHTML(formatearMoneda(montoTurno));
 
     li.innerHTML = `
       <div class="turno-info" style="width: 100%;">
@@ -486,8 +627,8 @@ function actualizarListaTurnos() {
       </div>
 
       <div class="acciones-item">
-        <button class="btn-accion" onclick="editarTurno(${indice})">Editar</button>
-        <button class="btn-eliminar" onclick="eliminarTurno(${indice})">Eliminar</button>
+        <button class="btn-accion" onclick="editarTurno(${indiceOriginal})">Editar</button>
+        <button class="btn-eliminar" onclick="eliminarTurno(${indiceOriginal})">Eliminar</button>
       </div>
     `;
 

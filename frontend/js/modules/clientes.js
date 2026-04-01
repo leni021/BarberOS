@@ -6,14 +6,7 @@ function normalizarNombreCliente(valor) {
   return (valor || "").trim().toLowerCase();
 }
 
-function formatearFechaCliente(fecha) {
-  if (!fecha) return "Sin registro";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    let [anio, mes, dia] = fecha.split("-");
-    return `${dia}/${mes}/${anio}`;
-  }
-  return fecha;
-}
+// formatearFecha → utils.js
 
 function mostrarMensajeClientes(mensaje, tipo = "error") {
   let contenedor = document.getElementById("mensajeClientes");
@@ -35,6 +28,33 @@ function limpiarMensajeClientes() {
 }
 
 let indiceClienteEnEdicion = -1;
+let paginaClientesActual = 1;
+const TAMANO_PAGINA_CLIENTES = 50;
+let filtroClientesTexto = "";
+
+function limpiarFiltrosClientes() {
+  filtroClientesTexto = "";
+  paginaClientesActual = 1;
+  mostrarClientes();
+}
+
+function irPaginaClientes(nuevaPagina) {
+  paginaClientesActual = Math.max(1, Number(nuevaPagina) || 1);
+  actualizarListaClientes();
+}
+
+function obtenerClientesFiltradosConIndice() {
+  let textoBuscado = normalizarNombreCliente(filtroClientesTexto);
+
+  return clientes
+    .map((cliente, indiceOriginal) => ({ cliente, indiceOriginal }))
+    .filter(({ cliente }) => {
+      if (!textoBuscado) return true;
+      let compuesto = `${cliente.nombre || ""} ${cliente.telefono || ""} ${cliente.observaciones || ""}`;
+      return normalizarNombreCliente(compuesto).includes(textoBuscado);
+    })
+    .reverse(); // Mostramos los últimos agregados primero por default
+}
 
 function mostrarClientes() {
   recargarDatos();
@@ -57,10 +77,30 @@ function mostrarClientes() {
     </div>
 
     <h2>Lista de Clientes</h2>
+    
+    <div class="agenda-filtros" style="margin-bottom: 16px;">
+      <div class="agenda-filtro-group" style="flex: 1 1 300px;">
+        <label>Buscar cliente</label>
+        <input id="filtroTextoClientes" type="text" placeholder="Nombre, teléfono u observaciones..." value="${escaparHTML(filtroClientesTexto)}">
+      </div>
+      <button type="button" class="agenda-accion-secundaria" onclick="limpiarFiltrosClientes()">Limpiar filtro</button>
+    </div>
+
+    <div id="resumenPaginacionClientes" class="agenda-resumen"></div>
     <ul id="listaClientes"></ul>
+    <div id="controlesPaginacionClientes" class="agenda-paginacion"></div>
   `;
 
   limpiarMensajeClientes();
+
+  let inputFiltro = document.getElementById("filtroTextoClientes");
+  if (inputFiltro) {
+    inputFiltro.addEventListener("input", (e) => {
+      filtroClientesTexto = String(e.target.value || "");
+      paginaClientesActual = 1;
+      actualizarListaClientes();
+    });
+  }
 
   actualizarListaClientes();
 }
@@ -106,6 +146,11 @@ function agregarCliente() {
   });
 
   guardarClientes(clientes);
+  
+  // Limpiamos los filtros para que el usuario vea su cliente recién agregado
+  filtroClientesTexto = "";
+  paginaClientesActual = 1;
+
   mostrarClientes();
   mostrarMensajeClientes("Cliente guardado correctamente.", "ok");
 }
@@ -133,6 +178,12 @@ function eliminarCliente(indice) {
     clientes.splice(indice, 1);
     guardarClientes(clientes);
     mostrarMensajeClientes("Cliente eliminado correctamente.", "ok");
+    
+    // Si la página se quedó vacía por borrar el último, retrocedemos
+    let filtrados = obtenerClientesFiltradosConIndice();
+    let totalPaginas = Math.max(1, Math.ceil(filtrados.length / TAMANO_PAGINA_CLIENTES));
+    if (paginaClientesActual > totalPaginas) paginaClientesActual = totalPaginas;
+
     actualizarListaClientes();
   } catch (error) {
     console.error("Error al eliminar cliente:", error);
@@ -142,15 +193,50 @@ function eliminarCliente(indice) {
 
 function actualizarListaClientes() {
   let lista = document.getElementById("listaClientes");
+  let resumenPaginacion = document.getElementById("resumenPaginacionClientes");
+  let controlesPaginacion = document.getElementById("controlesPaginacionClientes");
+  
   if (!lista) return;
 
   lista.innerHTML = "";
 
-  clientes.forEach((cliente, indice) => {
+  let filtrados = obtenerClientesFiltradosConIndice();
+  let total = filtrados.length;
+  let totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA_CLIENTES));
+  if (paginaClientesActual > totalPaginas) paginaClientesActual = totalPaginas;
+
+  let inicio = (paginaClientesActual - 1) * TAMANO_PAGINA_CLIENTES;
+  let fin = inicio + TAMANO_PAGINA_CLIENTES;
+  let paginaItems = filtrados.slice(inicio, fin);
+
+  if (resumenPaginacion) {
+    if (total === 0) {
+      resumenPaginacion.innerText = "Sin resultados para la búsqueda.";
+    } else {
+      resumenPaginacion.innerText = `Mostrando ${inicio + 1}-${Math.min(fin, total)} de ${total} clientes (Página ${paginaClientesActual}/${totalPaginas})`;
+    }
+  }
+
+  if (controlesPaginacion) {
+    if (total <= TAMANO_PAGINA_CLIENTES) {
+      controlesPaginacion.innerHTML = "";
+    } else {
+      let deshabilitarPrev = paginaClientesActual <= 1 ? "disabled" : "";
+      let deshabilitarNext = paginaClientesActual >= totalPaginas ? "disabled" : "";
+      controlesPaginacion.innerHTML = `
+        <button type="button" ${deshabilitarPrev} onclick="irPaginaClientes(${paginaClientesActual - 1})" style="margin:0;">Anterior</button>
+        <button type="button" ${deshabilitarNext} onclick="irPaginaClientes(${paginaClientesActual + 1})" style="margin:0;">Siguiente</button>
+      `;
+    }
+  }
+
+  if (total === 0) return;
+
+  paginaItems.forEach(({ cliente, indiceOriginal }) => {
     let li = document.createElement("li");
     li.className = "turno-item";
 
-    if (indice === indiceClienteEnEdicion) {
+    if (indiceOriginal === indiceClienteEnEdicion) {
       let nombreEdit = escaparHTML(cliente.nombre || "");
       let telefonoEdit = escaparHTML(cliente.telefono || "");
       let obsEdit = escaparHTML(cliente.observaciones || "");
@@ -161,7 +247,7 @@ function actualizarListaClientes() {
           <input id="editTelefonoCliente" value="${telefonoEdit}" placeholder="Teléfono" style="margin-top:0; margin-bottom:8px;">
           <input id="editObservacionesCliente" value="${obsEdit}" placeholder="Observaciones" style="margin-top:0; margin-bottom:8px;">
           <div class="acciones-item">
-            <button onclick="guardarEdicionCliente(${indice})">Guardar</button>
+            <button onclick="guardarEdicionCliente(${indiceOriginal})">Guardar</button>
             <button onclick="cancelarEdicionCliente()" style="background:#475569;">Cancelar</button>
           </div>
         </div>
@@ -174,19 +260,21 @@ function actualizarListaClientes() {
     let nombreSeguro = escaparHTML(cliente.nombre || "");
     let telefonoSeguro = escaparHTML(cliente.telefono || "");
     let observacionesSeguro = escaparHTML(cliente.observaciones || "");
-    let fechaSeguro = escaparHTML(formatearFechaCliente(cliente.ultimaVisita));
+    let fechaSeguro = escaparHTML(formatearFecha(cliente.ultimaVisita));
 
     li.innerHTML = `
       <div class="turno-info">
         <div class="turno-nombre" style="font-size: 18px;">${nombreSeguro}</div>
-        <div class="turno-detalle">${cliente.telefono ? "Tel: " + telefonoSeguro : "Sin teléfono"}</div>
-        <div class="turno-detalle">${cliente.observaciones ? "Obs: " + observacionesSeguro : "Sin observaciones"}</div>
-        <div class="turno-detalle" style="font-size: 12px; margin-top: 6px; color: #2563eb;">Última visita: ${fechaSeguro}</div>
+        <div class="meta-row">
+          <span class="meta-chip">${cliente.telefono ? "Tel: " + telefonoSeguro : "Sin teléfono"}</span>
+          <span class="meta-chip">${cliente.observaciones ? "Obs: " + observacionesSeguro : "Sin observaciones"}</span>
+          <span class="meta-chip meta-chip-info">Última visita: ${fechaSeguro}</span>
+        </div>
       </div>
 
       <div class="acciones-item">
-        <button class="btn-accion" onclick="iniciarEdicionCliente(${indice})">Editar</button>
-        <button class="btn-eliminar" onclick="eliminarCliente(${indice})">Eliminar</button>
+        <button class="btn-accion" onclick="iniciarEdicionCliente(${indiceOriginal})">Editar</button>
+        <button class="btn-eliminar" onclick="eliminarCliente(${indiceOriginal})">Eliminar</button>
       </div>
     `;
 
@@ -196,7 +284,7 @@ function actualizarListaClientes() {
 
 function iniciarEdicionCliente(indice) {
   indiceClienteEnEdicion = indice;
-  actualizarListaClientes();
+  actualizarListaClientes(); // Se dibuja la página actual mostrando el input
 }
 
 function cancelarEdicionCliente() {

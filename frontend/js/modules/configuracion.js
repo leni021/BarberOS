@@ -2,14 +2,7 @@
 // MÓDULO: CONFIGURACIÓN DEL NEGOCIO
 // ========================================
 
-function formatearMonedaConfig(valor) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(Number(valor) || 0);
-}
+// formatearMoneda → utils.js
 
 function calcularRangoSemana(fecha) {
   let copia = new Date(fecha);
@@ -120,6 +113,14 @@ function mostrarConfiguracion() {
   recargarDatos();
   let resumen = calcularResumenNegocio();
 
+  let mostrarDiagnostico = false;
+  try {
+    let query = new URLSearchParams(window.location.search || "");
+    let flagUrl = query.get("debugStorage") === "1";
+    let flagLocal = localStorage.getItem("barbeos_debug_storage") === "true";
+    mostrarDiagnostico = flagUrl || flagLocal;
+  } catch (_e) {}
+
   let negocioSeguro = escaparHTML(cuentaActual.negocio || "");
   let telefonoSeguro = escaparHTML(cuentaActual.telefono || "");
   let direccionSeguro = escaparHTML(cuentaActual.direccion || "");
@@ -136,19 +137,19 @@ function mostrarConfiguracion() {
       <div id="gridResumenNegocio">
         <div class="resumen-kpi">
           <div class="resumen-kpi-label">Ingresos de hoy</div>
-          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosHoy))}</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMoneda(resumen.ingresosHoy))}</div>
         </div>
         <div class="resumen-kpi">
           <div class="resumen-kpi-label">Ingresos semanales</div>
-          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosSemana))}</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMoneda(resumen.ingresosSemana))}</div>
         </div>
         <div class="resumen-kpi">
           <div class="resumen-kpi-label">Ingresos mensuales</div>
-          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ingresosMes))}</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMoneda(resumen.ingresosMes))}</div>
         </div>
         <div class="resumen-kpi">
           <div class="resumen-kpi-label">Ticket promedio</div>
-          <div class="resumen-kpi-valor">${escaparHTML(formatearMonedaConfig(resumen.ticketPromedio))}</div>
+          <div class="resumen-kpi-valor">${escaparHTML(formatearMoneda(resumen.ticketPromedio))}</div>
         </div>
         <div class="resumen-kpi">
           <div class="resumen-kpi-label">Turnos realizados</div>
@@ -186,7 +187,41 @@ function mostrarConfiguracion() {
       
       <input type="file" id="inputFileBackup" accept=".json" style="display: none;" onchange="procesarArchivoBackup(event)">
       <button onclick="document.getElementById('inputFileBackup').click()" style="background: #dc2626; width: 100%; margin-top: 10px;">Restaurar Backup</button>
+
+      ${mostrarDiagnostico ? `
+      <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 30px 0;">
+      <h3 style="margin-top: 0; color: #111827;">Diagnóstico de almacenamiento</h3>
+      <p style="color: #475569; font-size: 14px; margin-bottom: 10px;">Estado actual del guardado local para validar estabilidad y capacidad.</p>
+      <div id="diagStorageBox" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; color: #334155; font-size: 13px; line-height: 1.5;">Cargando diagnóstico...</div>
+      <button onclick="refrescarDiagnosticoStorage()" style="background: #0ea5e9; width: 100%; margin-top: 10px;">Actualizar Diagnóstico</button>
+      ` : ``}
     </div>
+  `;
+
+  if (mostrarDiagnostico) refrescarDiagnosticoStorage();
+}
+
+function refrescarDiagnosticoStorage() {
+  let caja = document.getElementById("diagStorageBox");
+  if (!caja) return;
+
+  let d = obtenerDiagnosticoAlmacenamiento();
+  let mb = (Number(d.bytesEstimados || 0) / (1024 * 1024)).toFixed(2);
+  let textoError = d.ultimoErrorStorage
+    ? `\nUltimo error: ${escaparHTML(String(d.ultimoErrorStorage.detalle || "Sin detalle"))}`
+    : "\nUltimo error: Ninguno";
+
+  caja.innerHTML = `
+    <strong>Modo:</strong> ${escaparHTML(d.modo)}<br>
+    <strong>Motor:</strong> ${escaparHTML(d.motor)}<br>
+    <strong>Persistencia confirmada:</strong> ${d.persistente ? "Si" : "No"}<br>
+    <strong>Claves guardadas:</strong> ${escaparHTML(d.totalClaves)}<br>
+    <strong>Turnos:</strong> ${escaparHTML(d.totalTurnos)}<br>
+    <strong>Clientes:</strong> ${escaparHTML(d.totalClientes)}<br>
+    <strong>Barberos:</strong> ${escaparHTML(d.totalBarberos)}<br>
+    <strong>Servicios:</strong> ${escaparHTML(d.totalServicios)}<br>
+    <strong>Productos:</strong> ${escaparHTML(d.totalProductos)}<br>
+    <strong>Tamano estimado:</strong> ${escaparHTML(mb)} MB${textoError}
   `;
 }
 

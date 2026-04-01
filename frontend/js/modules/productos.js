@@ -147,9 +147,11 @@ function actualizarListaProductos() {
     li.innerHTML = `
       <div class="turno-info">
         <div class="turno-nombre">${nombreSeguro}</div>
-        <div class="turno-detalle">Categoria: ${categoriaSeguro}</div>
-        <div class="turno-detalle">Precio: ${precioSeguro}</div>
-        <div class="turno-detalle">Stock: ${stockSeguro}</div>
+        <div class="meta-row">
+          <span class="meta-chip">Categoria: ${categoriaSeguro}</span>
+          <span class="meta-chip meta-chip-info">Precio: ${precioSeguro}</span>
+          <span class="meta-chip meta-chip-warn">Stock: ${stockSeguro}</span>
+        </div>
       </div>
       <div class="acciones-item">
         <button class="btn-accion" onclick="iniciarEdicionProducto(${indice})">Editar</button>

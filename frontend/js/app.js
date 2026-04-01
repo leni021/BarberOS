@@ -2,14 +2,7 @@
 // BARBEROS - APP PRINCIPAL
 // ========================================
 
-function escaparHTML(valor) {
-  return String(valor ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+
 
 const CLAVE_VERSION_APP = "barbeos_app_version";
 
@@ -113,6 +106,16 @@ function alternarModoOscuro() {
   aplicarModoOscuro(!obtenerModoOscuroActivo());
 }
 
+function activarBotonMenu(idActivo) {
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.classList.remove("activo");
+  });
+
+  if (!idActivo) return;
+  let activo = document.getElementById(idActivo);
+  if (activo) activo.classList.add("activo");
+}
+
 
 
 // ========================================
@@ -131,35 +134,59 @@ function conectarMenuLateral() {
   const btnModoOscuro = document.getElementById("btnModoOscuro");
 
   if (btnAgenda) {
-    btnAgenda.addEventListener("click", mostrarAgenda);
+    btnAgenda.addEventListener("click", () => {
+      activarBotonMenu("btnAgenda");
+      mostrarAgenda();
+    });
   }
 
   if (btnClientes) {
-    btnClientes.addEventListener("click", mostrarClientes);
+    btnClientes.addEventListener("click", () => {
+      activarBotonMenu("btnClientes");
+      mostrarClientes();
+    });
   }
 
   if (btnBarberos) {
-    btnBarberos.addEventListener("click", mostrarBarberos);
+    btnBarberos.addEventListener("click", () => {
+      activarBotonMenu("btnBarberos");
+      mostrarBarberos();
+    });
   }
 
   if (btnServicios) {
-    btnServicios.addEventListener("click", mostrarServicios);
+    btnServicios.addEventListener("click", () => {
+      activarBotonMenu("btnServicios");
+      mostrarServicios();
+    });
   }
 
   if (btnProductos && typeof mostrarProductos === "function") {
-    btnProductos.addEventListener("click", mostrarProductos);
+    btnProductos.addEventListener("click", () => {
+      activarBotonMenu("btnProductos");
+      mostrarProductos();
+    });
   }
 
   if (btnCierreCaja && typeof mostrarCierreCaja === "function") {
-    btnCierreCaja.addEventListener("click", mostrarCierreCaja);
+    btnCierreCaja.addEventListener("click", () => {
+      activarBotonMenu("btnCierreCaja");
+      mostrarCierreCaja();
+    });
   }
 
   if (btnPro && typeof mostrarPro === "function") {
-    btnPro.addEventListener("click", mostrarPro);
+    btnPro.addEventListener("click", () => {
+      activarBotonMenu("btnPro");
+      mostrarPro();
+    });
   }
 
   if (btnConfiguracion) {
-    btnConfiguracion.addEventListener("click", mostrarConfiguracion);
+    btnConfiguracion.addEventListener("click", () => {
+      activarBotonMenu("btnConfiguracion");
+      mostrarConfiguracion();
+    });
   }
 
   if (btnCerrarSesion) {
@@ -178,4 +205,5 @@ function conectarMenuLateral() {
 aplicarModoOscuro(obtenerModoOscuroActivo());
 conectarMenuLateral();
 mostrarVersionEnSidebar();
+activarBotonMenu("btnAgenda");
 mostrarAgenda();

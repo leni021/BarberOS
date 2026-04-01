@@ -2,22 +2,9 @@
 // MODULO: CIERRE DE CAJA
 // ========================================
 
-function formatearMonedaCaja(valor) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(Number(valor) || 0);
-}
+// formatearMoneda → utils.js
+// obtenerFechaHoyISO → date-utils.js
 
-function obtenerHoyIsoCaja() {
-  let hoy = new Date();
-  let y = hoy.getFullYear();
-  let m = String(hoy.getMonth() + 1).padStart(2, "0");
-  let d = String(hoy.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function normalizarServiciosTurnoCaja(turno) {
   if (Array.isArray(turno && turno.servicios)) {
@@ -120,6 +107,49 @@ function renderAvisoTurnosPendientesCierre(fechaIso) {
   `;
 }
 
+function renderHistorialTurnosRealizados(fechaIso) {
+  let contenedor = document.getElementById("listaTurnosRealizadosDia");
+  if (!contenedor) return;
+
+  let turnos = obtenerTurnos();
+  let realizados = turnos.filter((turno) => {
+    let estado = String(turno && turno.estado ? turno.estado : "").trim().toLowerCase();
+    return estado === "realizado" && String(turno.fecha || "") === fechaIso;
+  });
+
+  if (realizados.length === 0) {
+    contenedor.innerHTML = `<div style="font-size:14px; color:#64748b; margin-top:8px;">Aún no hay turnos realizados para esta fecha.</div>`;
+    return;
+  }
+
+  let htmlItems = realizados.map((t) => {
+    let hora = escaparHTML(t.hora || "Sin hora");
+    let cliente = escaparHTML(t.cliente || t.nombre || "Cliente sin definir");
+    let monto = escaparHTML(formatearMoneda(calcularMontoTurnoCaja(t)));
+    let bgServicio = t.servicio || t.producto ? "#eff6ff" : "transparent";
+    let detallesExtra = "";
+    if (t.servicio) detallesExtra += `Servicios: ${escaparHTML(t.servicio)}`;
+    if (t.producto) detallesExtra += (detallesExtra ? " | " : "") + `Productos: ${escaparHTML(t.producto)}`;
+    
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:${bgServicio}; border:1px solid #bfdbfe; border-radius:6px; padding:8px 12px; margin-top:6px; font-size:14px;">
+        <div>
+          <strong style="color:#1e3a8a;">${hora}</strong> · ${cliente}
+          <div style="font-size:12px; color:#475569; margin-top:2px;">${detallesExtra || "Sin detalles"}</div>
+        </div>
+        <div style="font-weight:bold; color:#1e40af;">${monto}</div>
+      </div>
+    `;
+  }).join("");
+
+  contenedor.innerHTML = `
+    <div style="font-size:14px; font-weight:600; color:#334155; margin-top:12px; border-top:1px solid #e2e8f0; padding-top:12px;">
+      Detalle de Turnos Realizados:
+    </div>
+    ${htmlItems}
+  `;
+}
+
 function mostrarListaCierresCaja() {
   let lista = document.getElementById("listaCierresCaja");
   if (!lista) return;
@@ -141,12 +171,12 @@ function mostrarListaCierresCaja() {
 
   cierres.forEach((cierre) => {
     let fecha = escaparHTML(cierre.fecha);
-    let ingresos = escaparHTML(formatearMonedaCaja(cierre.ingresos));
-    let egresos = escaparHTML(formatearMonedaCaja(cierre.egresos));
-    let esperado = escaparHTML(formatearMonedaCaja(cierre.esperado));
-    let contado = escaparHTML(formatearMonedaCaja(cierre.contado));
+    let ingresos = escaparHTML(formatearMoneda(cierre.ingresos));
+    let egresos = escaparHTML(formatearMoneda(cierre.egresos));
+    let esperado = escaparHTML(formatearMoneda(cierre.esperado));
+    let contado = escaparHTML(formatearMoneda(cierre.contado));
     let diferencia = Number(cierre.diferencia || 0);
-    let diferenciaTxt = escaparHTML(formatearMonedaCaja(diferencia));
+    let diferenciaTxt = escaparHTML(formatearMoneda(diferencia));
     let colorDif = diferencia < 0 ? "#dc2626" : (diferencia > 0 ? "#0f766e" : "#475569");
     let nota = escaparHTML(cierre.nota || "Sin nota");
 
@@ -163,11 +193,57 @@ function mostrarListaCierresCaja() {
         <div class="turno-detalle">Turnos realizados: ${escaparHTML(String(cierre.totalTurnosRealizados || 0))}</div>
         <div class="turno-detalle">Nota: ${nota}</div>
       </div>
+      <div class="acciones-item" style="margin-top: 12px; align-self: center;">
+        <button class="btn-eliminar" onclick="eliminarCierreCaja('${cierre.fecha}', this)" style="margin-top:0; min-width: 120px;">Eliminar</button>
+      </div>
     `;
 
     lista.appendChild(li);
   });
 }
+
+function eliminarCierreCaja(fechaCierre, btnElement) {
+  if (btnElement && btnElement.innerText === "Eliminar") {
+    // Primera fase: cambiar el botón a estado de confirmación
+    btnElement.innerText = "¿Seguro? Confirmar";
+    btnElement.style.backgroundColor = "#7f1d1d"; // rojo más oscuro
+    btnElement.style.transform = "scale(1.02)";
+    
+    // Si no hace clic en 4 segundos, volvemos a la normalidad
+    setTimeout(() => {
+      if (document.body.contains(btnElement) && btnElement.innerText === "¿Seguro? Confirmar") {
+        btnElement.innerText = "Eliminar";
+        btnElement.style.backgroundColor = "";
+        btnElement.style.transform = "";
+      }
+    }, 4000);
+    return;
+  }
+
+  // Segunda fase: ya estaba en Seguro, así que procedemos a eliminar.
+  let cierres = obtenerCierresCaja();
+  let indice = cierres.findIndex((c) => c.fecha === fechaCierre);
+  
+  if (indice === -1) return;
+
+  cierres.splice(indice, 1);
+  guardarCierresCaja(cierres);
+  
+  // Limpiamos notas/variables de error si venían de intentar cerrar un día duplicado
+  let mensaje = document.getElementById("mensajeCierreCaja");
+  if (mensaje) {
+    mensaje.style.display = "block";
+    mensaje.style.backgroundColor = "#dcfce7";
+    mensaje.style.color = "#166534";
+    mensaje.style.border = "1px solid #86efac";
+    mensaje.style.padding = "10px 12px";
+    mensaje.style.borderRadius = "6px";
+    mensaje.innerText = "Cierre eliminado correctamente.";
+  }
+
+  mostrarListaCierresCaja();
+}
+
 
 function recalcularCierreCajaEnPantalla() {
   let fecha = String(document.getElementById("fechaCierreCaja")?.value || "").trim();
@@ -185,14 +261,16 @@ function recalcularCierreCajaEnPantalla() {
   let elDiferencia = document.getElementById("diferenciaCierreCaja");
   let elTurnos = document.getElementById("turnosRealizadosCierreCaja");
 
-  if (elIngresos) elIngresos.innerText = formatearMonedaCaja(ingresos);
-  if (elEsperado) elEsperado.innerText = formatearMonedaCaja(esperado);
+  if (elIngresos) elIngresos.innerText = formatearMoneda(ingresos);
+  if (elEsperado) elEsperado.innerText = formatearMoneda(esperado);
   if (elDiferencia) {
-    elDiferencia.innerText = formatearMonedaCaja(diferencia);
+    elDiferencia.innerText = formatearMoneda(diferencia);
     elDiferencia.style.color = diferencia < 0 ? "#dc2626" : (diferencia > 0 ? "#0f766e" : "#475569");
   }
   if (elTurnos) elTurnos.innerText = String(resumen.totalTurnosRealizados || 0);
 
+  // Además de actualizar los números, actualizamos la lista visual recién agregada
+  renderHistorialTurnosRealizados(fecha);
   renderAvisoTurnosPendientesCierre(fecha);
 }
 
@@ -338,11 +416,11 @@ function exportarCierreCajaPDF() {
         <div class="muted">${escaparHTML(negocio)} · Fecha ${escaparHTML(fecha)}</div>
         <div class="card">
           <div class="row"><span class="label">Turnos realizados</span><span class="value">${escaparHTML(String(totalTurnos))}</span></div>
-          <div class="row"><span class="label">Ingresos</span><span class="value">${escaparHTML(formatearMonedaCaja(ingresos))}</span></div>
-          <div class="row"><span class="label">Egresos</span><span class="value">${escaparHTML(formatearMonedaCaja(egresos))}</span></div>
-          <div class="row"><span class="label">Esperado</span><span class="value">${escaparHTML(formatearMonedaCaja(esperado))}</span></div>
-          <div class="row"><span class="label">Contado</span><span class="value">${escaparHTML(formatearMonedaCaja(contado))}</span></div>
-          <div class="row"><span class="label">Diferencia</span><span class="value diff">${escaparHTML(formatearMonedaCaja(diferencia))}</span></div>
+          <div class="row"><span class="label">Ingresos</span><span class="value">${escaparHTML(formatearMoneda(ingresos))}</span></div>
+          <div class="row"><span class="label">Egresos</span><span class="value">${escaparHTML(formatearMoneda(egresos))}</span></div>
+          <div class="row"><span class="label">Esperado</span><span class="value">${escaparHTML(formatearMoneda(esperado))}</span></div>
+          <div class="row"><span class="label">Contado</span><span class="value">${escaparHTML(formatearMoneda(contado))}</span></div>
+          <div class="row"><span class="label">Diferencia</span><span class="value diff">${escaparHTML(formatearMoneda(diferencia))}</span></div>
           <div class="note"><strong>Nota:</strong> ${escaparHTML(nota || "Sin nota")}</div>
         </div>
       </body>
@@ -387,7 +465,7 @@ function exportarCierreCajaPDF() {
 }
 
 function mostrarCierreCaja() {
-  let fechaHoy = obtenerHoyIsoCaja();
+  let fechaHoy = obtenerFechaHoyISO();
 
   document.getElementById("contenido").innerHTML = `
     <h1>Cierre de Caja</h1>
@@ -405,6 +483,8 @@ function mostrarCierreCaja() {
       <div id="resumenPrevioCaja" style="background:#eff6ff; color:#1e3a8a; border-radius:8px; padding:10px; margin-top:10px;">
         <div>Turnos realizados: <strong id="turnosRealizadosCierreCaja">0</strong></div>
         <div>Ingresos calculados: <strong id="ingresosCalculadosCierreCaja">ARS 0</strong></div>
+        <!-- Acá se inyecta la lista visual de los turnos cerrados -->
+        <div id="listaTurnosRealizadosDia"></div>
       </div>
 
       <label for="egresosCierreCaja" style="margin-top:12px; display:block;">Egresos del dia</label>

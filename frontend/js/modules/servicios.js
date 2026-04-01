@@ -165,14 +165,7 @@ function eliminarServicio(indice) {
   }
 }
 
-function formatearPrecioServicio(precio) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(Number(precio) || 0);
-}
+// formatearMoneda → utils.js
 
 function actualizarListaServicios(serviciosConPrecio = obtenerServiciosConPrecioSeguros()) {
   let lista = document.getElementById("listaServicios");
@@ -220,12 +213,14 @@ function actualizarListaServicios(serviciosConPrecio = obtenerServiciosConPrecio
     }
 
     let servicioSeguro = escaparHTML(servicio.nombre);
-    let precioSeguro = escaparHTML(formatearPrecioServicio(servicio.precio));
+    let precioSeguro = escaparHTML(formatearMoneda(servicio.precio));
 
     li.innerHTML = `
       <div class="turno-info">
         <div class="turno-nombre">${servicioSeguro}</div>
-        <div class="turno-detalle">Precio: ${precioSeguro}</div>
+        <div class="meta-row">
+          <span class="meta-chip meta-chip-info">Precio: ${precioSeguro}</span>
+        </div>
       </div>
 
       <div class="acciones-item">

@@ -1,6 +1,6 @@
 {
   "name": "barber-software",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "description": "BarberOS - Gestion de barberia",
   "main": "main.js",
   "scripts": {
@@ -30,6 +30,8 @@
     },
     "files": [
       "main.js",
+      "preload.js",
+      "backend/**/*",
       "frontend/**/*",
       "package.json"
     ],
