@@ -59,7 +59,7 @@ cp .env.example .env
 npm install
 
 # Ejecutar en modo desarrollo
-npm run dev
+npm start
 ```
 
 ---
